@@ -6,55 +6,49 @@ pub fn pb11() {
     // File hosts must exist in current path before this produces output
     let mut total: i32 = 0;
     let mut max = 0;
-    if let Ok(lines) = read_lines("./src/day1.txt") {
-        // Consumes the iterator, returns an (Optional) String
-        for line in lines {
-            if let Ok(str) = line {
-                if str.is_empty() {
-                    total = 0;
-                } else {
-                    total = total + str.parse::<i32>().unwrap();
-                    if max < total {
-                        max = total
-                    }
-                }
+    let lines = read_lines("./src/day1.txt").unwrap();
+    // Consumes the iterator, returns an (Optional) String
+    for line in lines {
+        if let Ok(str) = line {
+            if str.is_empty() {
+                total = 0;
+            } else {
+                total = total + str.parse::<i32>().unwrap();
             }
         }
+        // including the last one
         if max < total {
             max = total
         }
-        println!("{}", max);
-    } else {
-        panic!("cannot open file")
     }
+    println!("{}", max);
 }
+
+// This implementation is trying to limit the memory space needed
+// only keeping the top 3 results.
 pub fn pb12() {
-    // File hosts must exist in current path before this produces output
     let mut total: i32 = 0;
-    let mut max1 = 0;
-    let mut max2 = 0;
-    let mut max3 = 0;
-    if let Ok(lines) = read_lines("./src/day1.txt") {
-        // Consumes the iterator, returns an (Optional) String
-        for line in lines {
-            if let Ok(str) = line {
-                if str.is_empty() {
-                    total = 0;
-                } else {
-                    total = total + str.parse::<i32>().unwrap();
-                    if max3 < total {
-                        [max1, max2, max3] = sort3(max1, max2, total);
-                    }
-                }
+    let mut top = [0, 0, 0];
+    let lines = read_lines("./src/day1.txt").unwrap();
+    // no memory is allocated during the loop
+    for line in lines {
+        if let Ok(str) = line {
+            if str.is_empty() {
+                total = 0;
+            } else {
+                total = total + str.parse::<i32>().unwrap();
             }
         }
-        if max3 < total {
-            [max1, max2, max3] = sort3(max1, max2, total);
+        // including the last iteration
+        if top[0] < total {
+            // if total is greater than the current top 3
+            // the top contains top 1, top 2 and total,
+            // in any order
+            top = [total, top[1], top[2]];
+            top.sort();
         }
-        println!("{}", max1 + max2 + max3);
-    } else {
-        panic!("cannot open file")
     }
+    println!("{}", top[0] + top[1] + top[2]);
 }
 
 // The output is wrapped in a Result to allow matching on errors
@@ -65,43 +59,4 @@ where
 {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
-}
-
-fn sort3(a: i32, b: i32, c: i32) -> [i32; 3] {
-    if a > b {
-        if a > c {
-            if b > c {
-                [a, b, c]
-            } else {
-                [a, c, b]
-            }
-        } else {
-            [c, a, b]
-        }
-    } else {
-        if a > c {
-            [b, a, c]
-        } else {
-            if b > c {
-                [b, c, a]
-            } else {
-                [c, b, a]
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
-    use super::*;
-
-    #[test]
-    fn test_order() {
-        assert_eq!(sort3(0, 1, 2), [2, 1, 0]);
-        assert_eq!(sort3(0, 1, 5), [5, 1, 0]);
-        assert_eq!(sort3(0, 5, 2), [5, 2, 0]);
-        assert_eq!(sort3(1, 1, 2), [2, 1, 1]);
-        assert_eq!(sort3(3, 1, 2), [3, 2, 1]);
-    }
 }
