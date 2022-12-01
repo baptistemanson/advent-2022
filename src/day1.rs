@@ -44,7 +44,7 @@ pub fn pb12() {
             // if total is greater than the current top 3
             // the top contains top 1, top 2 and total,
             // in any order
-            top = [total, top[1], top[2]];
+            top[0] = total;
             top.sort();
         }
     }
