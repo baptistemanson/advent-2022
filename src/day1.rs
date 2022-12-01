@@ -3,17 +3,16 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 pub fn pb11() {
-    // File hosts must exist in current path before this produces output
-    let mut total: i32 = 0;
     let mut max = 0;
+    let mut total: i32 = 0;
     let lines = read_lines("./src/day1.txt").unwrap();
     // Consumes the iterator, returns an (Optional) String
     for line in lines {
         if let Ok(str) = line {
-            if str.is_empty() {
-                total = 0;
+            total = if str.is_empty() {
+                0
             } else {
-                total = total + str.parse::<i32>().unwrap();
+                total + str.parse::<i32>().unwrap()
             }
         }
         // including the last one
@@ -27,22 +26,24 @@ pub fn pb11() {
 // This implementation is trying to limit the memory space needed
 // only keeping the top 3 results.
 pub fn pb12() {
+    let mut top = [0; 3];
     let mut total: i32 = 0;
-    let mut top = [0, 0, 0];
     let lines = read_lines("./src/day1.txt").unwrap();
-    // no memory is allocated during the loop
     for line in lines {
         if let Ok(str) = line {
-            if str.is_empty() {
-                total = 0;
+            total = if str.is_empty() {
+                0
             } else {
-                total = total + str.parse::<i32>().unwrap();
+                total + str.parse::<i32>().unwrap()
             }
         }
         // including the last iteration
+        // this could be only be executed when we reset total
+        // and when we finish the loop
+        // but clarity before performance
         if top[0] < total {
-            // if total is greater than the current top 3
-            // the top contains top 1, top 2 and total,
+            // if total is greater than the current smallest top
+            // then the new top contains total and all the others,
             // in any order
             top[0] = total;
             top.sort();
