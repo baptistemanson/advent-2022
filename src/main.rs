@@ -7,6 +7,7 @@ fn main() {
         "12" => day1::pb2(),
         "21" => day2::pb1(),
         "22" => day2::pb2(),
+        "22bis" => day2::pb2bis(),
         _ => panic!("unknown problem"),
     }
 }

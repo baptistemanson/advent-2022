@@ -33,8 +33,6 @@ pub fn pb1() {
     println!("{}", score);
 }
 
-// This implementation is trying to limit the memory space needed
-// only keeping the top 3 results.
 pub fn pb2() {
     let mut score: u32 = 0;
     let x_score = 0;
@@ -63,6 +61,74 @@ pub fn pb2() {
     println!("{}", score);
 }
 
+pub fn pb2bis() {
+    let mut score: u32 = 0;
+    let lines = read_lines("./src/day2.txt").unwrap();
+    for line in lines {
+        if let Ok(str) = line {
+            score += get_play_score(
+                str.chars().nth(0).unwrap().into(),
+                str.chars().nth(2).unwrap().into(),
+            )
+        }
+    }
+    println!("{}", score);
+}
+
+enum Play {
+    Rock = 1,
+    Paper = 2,
+    Scissors = 3,
+}
+
+impl From<char> for Play {
+    fn from(c: char) -> Self {
+        match c {
+            'A' => Play::Rock,
+            'B' => Play::Paper,
+            'C' => Play::Scissors,
+            _ => panic!("invalid option"),
+        }
+    }
+}
+enum Result {
+    Loose = 0,
+    Draw = 3,
+    Win = 6,
+}
+
+impl From<char> for Result {
+    fn from(c: char) -> Self {
+        match c {
+            'X' => Result::Loose,
+            'Y' => Result::Draw,
+            'Z' => Result::Win,
+            _ => panic!("invalid option"),
+        }
+    }
+}
+
+fn get_play_score(play: Play, result: Result) -> u32 {
+    return match result {
+        Result::Loose => {
+            Result::Loose as u32
+                + match play {
+                    Play::Rock => Play::Scissors,
+                    Play::Paper => Play::Rock,
+                    Play::Scissors => Play::Paper,
+                } as u32
+        }
+        Result::Draw => Result::Draw as u32 + play as u32,
+        Result::Win => {
+            Result::Win as u32
+                + match play {
+                    Play::Rock => Play::Paper,
+                    Play::Paper => Play::Scissors,
+                    Play::Scissors => Play::Rock,
+                } as u32
+        }
+    };
+}
 // The output is wrapped in a Result to allow matching on errors
 // Returns an Iterator to the Reader of the lines of the file.
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
