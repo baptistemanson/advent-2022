@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-pub fn pb11() {
+pub fn pb1() {
     let mut max = 0;
     let mut total: i32 = 0;
     let lines = read_lines("./src/day1.txt").unwrap();
@@ -25,7 +25,7 @@ pub fn pb11() {
 
 // This implementation is trying to limit the memory space needed
 // only keeping the top 3 results.
-pub fn pb12() {
+pub fn pb2() {
     let mut top = [0; 3];
     let mut total: i32 = 0;
     let lines = read_lines("./src/day1.txt").unwrap();
@@ -37,10 +37,8 @@ pub fn pb12() {
                 total + str.parse::<i32>().unwrap()
             }
         }
-        // including the last iteration
         // this could be only be executed when we reset total
         // and when we finish the loop
-        // but clarity before performance
         if top[0] < total {
             // if total is greater than the current smallest top
             // then the new top contains total and all the others,
