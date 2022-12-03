@@ -36,7 +36,7 @@ mod tests {
         assert_eq!(to_priority('t'), 20);
     }
 }
-
+// could short circuit with a hashset to not scan twice the same.
 fn find_missing(a: &str, b: &str) -> char {
     for to_find in a.chars() {
         if b.contains(to_find) {
@@ -46,6 +46,7 @@ fn find_missing(a: &str, b: &str) -> char {
     panic!("couldnt find")
 }
 
+// could short circuit with a hashset to not scan twice the same.
 fn find_missing_3(a: &str, b: &str, c: &str) -> char {
     for to_find in a.chars() {
         if b.contains(to_find) {
