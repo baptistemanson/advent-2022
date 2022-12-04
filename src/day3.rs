@@ -7,8 +7,8 @@ pub fn pb1() {
     let lines = read_lines("./src/day3.txt").unwrap();
     for line in lines {
         if let Ok(str) = line {
-            let first_half = &str[0..str.len() / 2];
-            let second_half = &str[str.len() / 2..];
+            assert!(str.len() % 2 == 0, "{} is not of even length", str);
+            let (first_half, second_half) = &str.split_at(str.len() / 2);
             total += to_priority(find_missing(first_half, second_half)) as u32;
         }
     }
@@ -49,10 +49,8 @@ fn find_missing(a: &str, b: &str) -> char {
 // could short circuit with a hashset to not scan twice the same.
 fn find_missing_3(a: &str, b: &str, c: &str) -> char {
     for to_find in a.chars() {
-        if b.contains(to_find) {
-            if c.contains(to_find) {
-                return to_find;
-            }
+        if b.contains(to_find) && c.contains(to_find) {
+            return to_find;
         }
     }
     panic!("couldnt find")
