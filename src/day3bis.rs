@@ -28,8 +28,6 @@ fn to_bitmap(c: &str) -> u64 {
         .fold(0u64, |acc, x| acc | 1 << x);
 }
 
-// This implementation is trying to limit the memory space needed
-// only keeping the top 3 results.
 pub fn pb2() {
     let total: u32 = read_lines("./src/day3.txt")
         .unwrap()
