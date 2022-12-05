@@ -1,61 +1,39 @@
-use lazy_static::lazy_static;
-use regex::Regex;
-
 type Stacks = Vec<Vec<char>>;
 
 pub fn pb1() {
-    let mut stacks: Stacks = vec![];
-    let mut header: Vec<&str> = vec![];
-    for line in INPUT.lines() {
-        if is_stacks_empty(&stacks) {
-            if is_header(&line) {
-                header.push(line);
-            } else {
-                build_from_header(&mut stacks, line, &header);
-            }
-        } else if line.len() > 0 {
-            let (iter, source, dest) = parse(line);
+    let (header, commands) = INPUT.split_once("\n\n").unwrap();
+    let mut stacks: Stacks = build_stack(&header.lines().collect::<Vec<&str>>());
+    commands
+        .lines()
+        .map(parse_command)
+        .for_each(|(iter, src, dest)| {
             for _ in 0..iter {
-                let tail = stacks[source - 1].pop().unwrap();
+                let tail = stacks[src - 1].pop().unwrap();
                 stacks[dest - 1].push(tail);
             }
-        }
-    }
+        });
     dbg!(stacks.iter().map(|s| s[s.len() - 1]).collect::<String>());
 }
 
 pub fn pb2() {
-    let mut stacks: Stacks = vec![];
-    let mut header: Vec<&str> = vec![];
-    for line in INPUT.lines() {
-        if is_stacks_empty(&stacks) {
-            if is_header(&line) {
-                header.push(line);
-            } else {
-                build_from_header(&mut stacks, line, &header);
-            }
-        } else if line.len() > 0 {
-            let (iter, source, dest) = parse(line);
-            let s = stacks[source - 1].len() - iter;
-            let mut tail = stacks[source - 1].split_off(s);
+    let (header, commands) = INPUT.split_once("\n\n").unwrap();
+    let mut stacks: Stacks = build_stack(&header.lines().collect::<Vec<&str>>());
+    commands
+        .lines()
+        .map(parse_command)
+        .for_each(|(iter, src, dest)| {
+            let s = stacks[src - 1].len() - iter;
+            let mut tail = stacks[src - 1].split_off(s);
             stacks[dest - 1].append(&mut tail);
-        }
-    }
+        });
     dbg!(stacks.iter().map(|s| s[s.len() - 1]).collect::<String>());
 }
 
-fn is_stacks_empty<T>(stacks: &Vec<T>) -> bool {
-    stacks.len() == 0
-}
-
-fn is_header(line: &str) -> bool {
-    line.chars().nth(1) != Some('1')
-}
-
-fn build_from_header(stacks: &mut Stacks, stack_numbers: &str, header: &Vec<&str>) {
-    let col_to_stack = |col: usize| (col + 1) / 4;
-    (0..col_to_stack(stack_numbers.len())).for_each(|_| stacks.push(vec![]));
-    for i in (0..header.len()).rev() {
+fn build_stack(header: &Vec<&str>) -> Stacks {
+    let col_to_stack = |col: usize| (col + 1) / 4; // translate the column of the header to a stack number
+    let stacks_len = col_to_stack(header.last().unwrap().len());
+    let mut stacks = vec![vec![]; stacks_len];
+    for i in (0..header.len() - 1).rev() {
         for col in (1..header[i].len()).step_by(4) {
             let letter = header[i].chars().nth(col).unwrap();
             if letter != ' ' {
@@ -63,18 +41,16 @@ fn build_from_header(stacks: &mut Stacks, stack_numbers: &str, header: &Vec<&str
             }
         }
     }
+    return stacks;
 }
 
-fn parse(line: &str) -> (usize, usize, usize) {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
-    }
-    let matches = RE.captures(line).unwrap();
-    return (
-        matches[1].parse::<usize>().unwrap(),
-        matches[2].parse::<usize>().unwrap(),
-        matches[3].parse::<usize>().unwrap(),
-    );
+fn parse_command(line: &str) -> (usize, usize, usize) {
+    let mut split = line.split(" ");
+    (
+        split.nth(1).unwrap().parse::<usize>().unwrap(),
+        split.nth(1).unwrap().parse::<usize>().unwrap(),
+        split.nth(1).unwrap().parse::<usize>().unwrap(),
+    )
 }
 
 #[allow(dead_code)]
