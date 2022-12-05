@@ -1,41 +1,42 @@
 type Stacks = Vec<Vec<char>>;
+type Command = (usize, usize, usize);
 
 pub fn pb1() {
-    let (header, commands) = INPUT.split_once("\n\n").unwrap();
-    let mut stacks: Stacks = build_stack(&header.lines().collect::<Vec<&str>>());
+    let (stacks_desc, commands) = INPUT.split_once("\n\n").unwrap();
+    let mut stacks: Stacks = build_stack(stacks_desc.lines().collect::<Vec<&str>>());
     commands
         .lines()
         .map(parse_command)
         .for_each(|(iter, src, dest)| {
             for _ in 0..iter {
-                let tail = stacks[src - 1].pop().unwrap();
-                stacks[dest - 1].push(tail);
+                let tail = stacks[src].pop().unwrap();
+                stacks[dest].push(tail);
             }
         });
-    dbg!(stacks.iter().map(|s| s[s.len() - 1]).collect::<String>());
+    dbg!(stacks.iter().map(|s| s.last().unwrap()).collect::<String>());
 }
 
 pub fn pb2() {
-    let (header, commands) = INPUT.split_once("\n\n").unwrap();
-    let mut stacks: Stacks = build_stack(&header.lines().collect::<Vec<&str>>());
+    let (stacks_desc, commands) = INPUT.split_once("\n\n").unwrap();
+    let mut stacks: Stacks = build_stack(stacks_desc.lines().collect::<Vec<&str>>());
     commands
         .lines()
         .map(parse_command)
         .for_each(|(iter, src, dest)| {
-            let s = stacks[src - 1].len() - iter;
-            let mut tail = stacks[src - 1].split_off(s);
-            stacks[dest - 1].append(&mut tail);
+            let s = stacks[src].len() - iter;
+            let mut tail = stacks[src].split_off(s);
+            stacks[dest].append(&mut tail);
         });
-    dbg!(stacks.iter().map(|s| s[s.len() - 1]).collect::<String>());
+    dbg!(stacks.iter().map(|s| s.last().unwrap()).collect::<String>());
 }
 
-fn build_stack(header: &Vec<&str>) -> Stacks {
-    let col_to_stack = |col: usize| (col + 1) / 4; // translate the column of the header to a stack number
-    let stacks_len = col_to_stack(header.last().unwrap().len());
+fn build_stack(desc: Vec<&str>) -> Stacks {
+    let col_to_stack = |col: usize| (col + 1) / 4; // column in the description -> stack id
+    let stacks_len = col_to_stack(desc.last().unwrap().len()); // get nb of stacks from last line
     let mut stacks = vec![vec![]; stacks_len];
-    for i in (0..header.len() - 1).rev() {
-        for col in (1..header[i].len()).step_by(4) {
-            let letter = header[i].chars().nth(col).unwrap();
+    for i in (0..desc.len() - 1).rev() {
+        for col in (1..desc[i].len()).step_by(4) {
+            let letter = desc[i].chars().nth(col).unwrap();
             if letter != ' ' {
                 stacks[col_to_stack(col)].push(letter);
             }
@@ -44,12 +45,12 @@ fn build_stack(header: &Vec<&str>) -> Stacks {
     return stacks;
 }
 
-fn parse_command(line: &str) -> (usize, usize, usize) {
+fn parse_command(line: &str) -> Command {
     let mut split = line.split(" ");
     (
         split.nth(1).unwrap().parse::<usize>().unwrap(),
-        split.nth(1).unwrap().parse::<usize>().unwrap(),
-        split.nth(1).unwrap().parse::<usize>().unwrap(),
+        split.nth(1).unwrap().parse::<usize>().unwrap() - 1,
+        split.nth(1).unwrap().parse::<usize>().unwrap() - 1,
     )
 }
 
