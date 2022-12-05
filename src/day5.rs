@@ -1,44 +1,65 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 
+type Stacks = Vec<Vec<char>>;
+
 pub fn pb1() {
-    let mut stacks: Vec<Vec<char>> = vec![];
-    let mut stacks_as_str: Vec<&str> = vec![];
-    let mut is_building_stacks = true;
+    let mut stacks: Stacks = vec![];
+    let mut header: Vec<&str> = vec![];
     for line in INPUT.lines() {
-        if is_building_stacks {
-            if line.chars().nth(1) != Some('1') {
-                stacks_as_str.push(line);
+        if is_stacks_empty(&stacks) {
+            if is_header(&line) {
+                header.push(line);
             } else {
-                is_building_stacks = false;
-                build_stacks(line, &mut stacks, &stacks_as_str);
+                build_from_header(&mut stacks, line, &header);
             }
-        } else {
+        } else if line.len() > 0 {
             let (iter, source, dest) = parse(line);
             for _ in 0..iter {
-                move_crate(&mut stacks, source, dest);
+                let tail = stacks[source - 1].pop().unwrap();
+                stacks[dest - 1].push(tail);
             }
         }
     }
-    let top = stacks.iter().map(|s| s[s.len() - 1]).collect::<String>();
-    dbg!(top);
+    dbg!(stacks.iter().map(|s| s[s.len() - 1]).collect::<String>());
 }
 
-fn move_crate(stacks: &mut Vec<Vec<char>>, source: usize, dest: usize) {
-    let c = stacks[source - 1].pop().unwrap();
-    stacks[dest - 1].push(c);
-}
-
-fn build_stacks(line: &str, stacks: &mut Vec<Vec<char>>, lines: &Vec<&str>) {
-    let nb_stacks = (line.len() + 1) / 4;
-    for _ in 0..nb_stacks {
-        stacks.push(vec![]);
+pub fn pb2() {
+    let mut stacks: Stacks = vec![];
+    let mut header: Vec<&str> = vec![];
+    for line in INPUT.lines() {
+        if is_stacks_empty(&stacks) {
+            if is_header(&line) {
+                header.push(line);
+            } else {
+                build_from_header(&mut stacks, line, &header);
+            }
+        } else if line.len() > 0 {
+            let (iter, source, dest) = parse(line);
+            let s = stacks[source - 1].len() - iter;
+            let mut tail = stacks[source - 1].split_off(s);
+            stacks[dest - 1].append(&mut tail);
+        }
     }
-    for i in (0..lines.len()).rev() {
-        for c in (1..lines[i].len()).step_by(4) {
-            let letter = lines[i].chars().nth(c).unwrap();
+    dbg!(stacks.iter().map(|s| s[s.len() - 1]).collect::<String>());
+}
+
+fn is_stacks_empty<T>(stacks: &Vec<T>) -> bool {
+    stacks.len() == 0
+}
+
+fn is_header(line: &str) -> bool {
+    line.chars().nth(1) != Some('1')
+}
+
+fn build_from_header(stacks: &mut Stacks, stack_numbers: &str, header: &Vec<&str>) {
+    let col_to_stack = |col: usize| (col + 1) / 4;
+    (0..col_to_stack(stack_numbers.len())).for_each(|_| stacks.push(vec![]));
+    for i in (0..header.len()).rev() {
+        for col in (1..header[i].len()).step_by(4) {
+            let letter = header[i].chars().nth(col).unwrap();
             if letter != ' ' {
-                stacks[(c + 1) / 4].push(letter);
+                stacks[col_to_stack(col)].push(letter);
             }
         }
     }
@@ -48,43 +69,12 @@ fn parse(line: &str) -> (usize, usize, usize) {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"move (\d+) from (\d+) to (\d+)").unwrap();
     }
-    if line.len() == 0 {
-        return (0, 0, 0);
-    }
     let matches = RE.captures(line).unwrap();
     return (
         matches[1].parse::<usize>().unwrap(),
         matches[2].parse::<usize>().unwrap(),
         matches[3].parse::<usize>().unwrap(),
     );
-}
-
-// This implementation is trying to limit the memory space needed
-// only keeping the top 3 results.
-pub fn pb2() {
-    let mut stacks: Vec<Vec<char>> = vec![];
-    let mut stacks_as_str: Vec<&str> = vec![];
-    let mut is_building_stacks = true;
-    for line in INPUT.lines() {
-        if is_building_stacks {
-            if line.chars().nth(1) != Some('1') {
-                stacks_as_str.push(line);
-            } else {
-                is_building_stacks = false;
-                build_stacks(line, &mut stacks, &stacks_as_str);
-            }
-        } else {
-            let (iter, source, dest) = parse(line);
-            if iter == 0 {
-                continue;
-            }
-            let split_point = stacks[source - 1].len() - iter;
-            let mut tail = stacks[source - 1].split_off(split_point);
-            stacks[dest - 1].append(&mut tail);
-        }
-    }
-    let top = stacks.iter().map(|s| s[s.len() - 1]).collect::<String>();
-    dbg!(top);
 }
 
 #[allow(dead_code)]
