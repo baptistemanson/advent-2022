@@ -48,8 +48,7 @@ fn find_missing_3(a: &str, b: &str, c: &str) -> char {
     }
     panic!("couldnt find")
 }
-// This implementation is trying to limit the memory space needed
-// only keeping the top 3 results.
+
 pub fn pb2() {
     let mut total: u32 = 0;
     let mut i = 0;

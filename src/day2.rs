@@ -1,27 +1,23 @@
-// A X Rock
-// B Y Paper
-// C Z Scissors
-
 pub fn pb1() {
     let mut score: u32 = 0;
-    let x_score = 1;
-    let y_score = 2;
-    let z_score = 3;
-    let lose_score = 0;
-    let draw_score = 3;
-    let win_score = 6;
+    let x = 1;
+    let y = 2;
+    let z = 3;
+    let loose = 0;
+    let draw = 3;
+    let win = 6;
     for line in INPUT.lines() {
         score += match line {
-            "A X" => x_score + draw_score,
-            "A Y" => y_score + win_score,
-            "A Z" => z_score + lose_score,
-            "B X" => x_score + lose_score,
-            "B Y" => y_score + draw_score,
-            "B Z" => z_score + win_score,
-            "C X" => x_score + win_score,
-            "C Y" => y_score + lose_score,
-            "C Z" => z_score + draw_score,
-            _ => panic!("uknown combination"),
+            "A X" => x + draw,
+            "A Y" => y + win,
+            "A Z" => z + loose,
+            "B X" => x + loose,
+            "B Y" => y + draw,
+            "B Z" => z + win,
+            "C X" => x + win,
+            "C Y" => y + loose,
+            "C Z" => z + draw,
+            _ => panic!("unknown combination"),
         };
     }
     println!("{}", score);
@@ -29,24 +25,24 @@ pub fn pb1() {
 
 pub fn pb2() {
     let mut score: u32 = 0;
-    let x_score = 0;
-    let y_score = 3;
-    let z_score = 6;
-    let a_score = 1; // rock
-    let b_score = 2; // paper
-    let c_score = 3; // scissor
+    let x = 0;
+    let y = 3;
+    let z = 6;
+    let a = 1; // rock
+    let b = 2; // paper
+    let c = 3; // scissor
     for line in INPUT.lines() {
         score += match line {
-            "A X" => x_score + c_score, // Rock > Scissor
-            "A Y" => y_score + a_score,
-            "A Z" => z_score + b_score,
-            "B X" => x_score + a_score, // Paper > Rock
-            "B Y" => y_score + b_score,
-            "B Z" => z_score + c_score,
-            "C X" => x_score + b_score, // Scissor > Paper
-            "C Y" => y_score + c_score,
-            "C Z" => z_score + a_score,
-            _ => panic!("uknown combination"),
+            "A X" => x + c, // Rock > Scissor
+            "A Y" => y + a,
+            "A Z" => z + b,
+            "B X" => x + a, // Paper > Rock
+            "B Y" => y + b,
+            "B Z" => z + c,
+            "C X" => x + b, // Scissor > Paper
+            "C Y" => y + c,
+            "C Z" => z + a,
+            _ => panic!("unknown combination"),
         };
     }
     println!("{}", score);

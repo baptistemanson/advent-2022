@@ -9,12 +9,10 @@ pub fn pb1() {
             max = cmp::max(total, max);
             total = 0;
         } else {
-            total = total + line.parse::<i32>().unwrap()
+            total += line.parse::<i32>().unwrap()
         };
     }
-    max = cmp::max(total, max);
-
-    println!("{}", max);
+    println!("{}", cmp::max(total, max));
 }
 
 fn keep_top(total: i32, top: &mut [i32; 3]) {
@@ -33,7 +31,7 @@ pub fn pb2() {
             keep_top(total, &mut top);
             total = 0;
         } else {
-            total = total + line.parse::<i32>().unwrap()
+            total += line.parse::<i32>().unwrap()
         };
     }
     keep_top(total, &mut top);

@@ -1,51 +1,43 @@
 pub fn pb1() {
     let count = INPUT
         .lines()
-        .map(|s| {
-            let (fst, snd) = s.split_once(",").unwrap();
-            let (a, b) = fst.split_once("-").unwrap();
-            let (c, d) = snd.split_once("-").unwrap();
-            [
-                a.parse::<u32>().unwrap(),
-                b.parse::<u32>().unwrap(),
-                c.parse::<u32>().unwrap(),
-                d.parse::<u32>().unwrap(),
-            ]
-        })
+        .map(get_intervals)
         .filter(filter_pairs)
         .count();
-    println!("{}", count);
+    dbg!(count);
+}
+
+fn get_intervals(s: &str) -> [u32; 4] {
+    let (fst, snd) = s.split_once(",").unwrap();
+    let (a, b) = fst.split_once("-").unwrap();
+    let (c, d) = snd.split_once("-").unwrap();
+    [
+        a.parse::<u32>().unwrap(),
+        b.parse::<u32>().unwrap(),
+        c.parse::<u32>().unwrap(),
+        d.parse::<u32>().unwrap(),
+    ]
 }
 
 fn filter_pairs(pairs: &[u32; 4]) -> bool {
     return pairs[0] <= pairs[2] && pairs[3] <= pairs[1]
         || pairs[2] <= pairs[0] && pairs[1] <= pairs[3];
 }
-// This implementation is trying to limit the memory space needed
-// only keeping the top 3 results.
+
 pub fn pb2() {
     let count = INPUT
         .lines()
-        .map(|s| {
-            let (fst, snd) = s.split_once(",").unwrap();
-            let (a, b) = fst.split_once("-").unwrap();
-            let (c, d) = snd.split_once("-").unwrap();
-            [
-                a.parse::<u32>().unwrap(),
-                b.parse::<u32>().unwrap(),
-                c.parse::<u32>().unwrap(),
-                d.parse::<u32>().unwrap(),
-            ]
-        })
+        .map(get_intervals)
         .filter(filter_pairs_overlap)
         .count();
-    println!("{}", count);
+    dbg!(count);
 }
 
 fn filter_pairs_overlap(pairs: &[u32; 4]) -> bool {
     return pairs[0] <= pairs[2] && pairs[2] <= pairs[1]
         || pairs[2] <= pairs[0] && pairs[0] <= pairs[3];
 }
+
 #[allow(dead_code)]
 const INPUT_DBG: &str = "\
 2-4,6-8
