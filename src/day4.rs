@@ -46,7 +46,7 @@ fn filter_pairs_overlap(pairs: &[u32; 4]) -> bool {
     return pairs[0] <= pairs[2] && pairs[2] <= pairs[1]
         || pairs[2] <= pairs[0] && pairs[0] <= pairs[3];
 }
-
+#[allow(dead_code)]
 const INPUT_DBG: &str = "\
 2-4,6-8
 2-3,4-5
