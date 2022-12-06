@@ -1,10 +1,12 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 
 pub fn pb1() {
     dbg!(find_start_packet(INPUT));
 }
 pub fn pb2() {
-    dbg!(find_start_message(INPUT));
+    dbg!(find_start_message_performant(INPUT));
 }
 
 fn find_start_packet(input: &str) -> usize {
@@ -44,6 +46,66 @@ fn find_start_message_alt(input: &str) -> usize {
     message_position + 14
 }
 
+struct RotatingBuffer<'a> {
+    data: &'a mut [char],
+    pub size: usize,
+    pub next_cursor: usize,
+}
+
+impl<'a> RotatingBuffer<'a> {
+    fn insert(&mut self, c: char) {
+        self.data[self.next_cursor] = c;
+        self.next_cursor = (self.next_cursor + 1) % self.size;
+    }
+
+    fn iter(&self) -> std::ops::Range<usize> {
+        (self.next_cursor)..(self.next_cursor + self.size)
+    }
+
+    fn get(&self, idx: usize) -> char {
+        self.data[idx % self.size]
+    }
+
+    fn new(data: &'a mut [char]) -> Self {
+        let size = data.len();
+        Self {
+            data,
+            size,
+            next_cursor: 0,
+        }
+    }
+}
+
+fn find_start_message_performant(input: &str) -> usize {
+    const SIZE: usize = 14;
+    let mut chars: [char; SIZE] = [' '; SIZE];
+    let mut buffer = RotatingBuffer::new(&mut chars);
+    let mut to_skip = SIZE + 1;
+    for (pos, char) in input.chars().enumerate() {
+        buffer.insert(char);
+        to_skip -= 1;
+        if to_skip == 0 {
+            if let Some(skip) = find_dup_pos_right(&buffer) {
+                to_skip = skip;
+            } else {
+                return pos + 1;
+            }
+        }
+    }
+    panic!("didnt find start of message");
+}
+
+fn find_dup_pos_right(buffer: &RotatingBuffer) -> Option<usize> {
+    let mut seen: HashSet<char> = HashSet::new();
+    for i in buffer.iter().rev() {
+        let c = buffer.get(i);
+        if seen.contains(&c) {
+            return Some(i - buffer.next_cursor + 1);
+        }
+        seen.insert(c);
+    }
+    return None;
+}
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
@@ -76,6 +138,30 @@ mod tests {
         );
         assert_eq!(
             find_start_message_alt("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"),
+            26
+        );
+    }
+
+    #[test]
+    fn test_message_performant() {
+        assert_eq!(
+            find_start_message_performant("mjqjpqmgbljsphdztnvjfqwrcgsmlb"),
+            19
+        );
+        assert_eq!(
+            find_start_message_performant("bvwbjplbgvbhsrlpgdmjqwftvncz"),
+            23
+        );
+        assert_eq!(
+            find_start_message_performant("nppdvjthqldpwncqszvftbrmjlhg"),
+            23
+        );
+        assert_eq!(
+            find_start_message_performant("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg"),
+            29
+        );
+        assert_eq!(
+            find_start_message_performant("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"),
             26
         );
     }
