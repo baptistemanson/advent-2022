@@ -46,13 +46,13 @@ fn find_start_message_alt(input: &str) -> usize {
     message_position + 14
 }
 
-struct RotatingBuffer<'a> {
+struct RingBuffer<'a> {
     data: &'a mut [char],
     pub size: usize,
     pub next_cursor: usize,
 }
 
-impl<'a> RotatingBuffer<'a> {
+impl<'a> RingBuffer<'a> {
     fn insert(&mut self, c: char) {
         self.data[self.next_cursor] = c;
         self.next_cursor = (self.next_cursor + 1) % self.size;
@@ -79,7 +79,7 @@ impl<'a> RotatingBuffer<'a> {
 fn find_start_message_performant(input: &str) -> usize {
     const SIZE: usize = 14;
     let mut chars: [char; SIZE] = [' '; SIZE];
-    let mut buffer = RotatingBuffer::new(&mut chars);
+    let mut buffer = RingBuffer::new(&mut chars);
     let mut to_skip = SIZE + 1;
     for (pos, char) in input.chars().enumerate() {
         buffer.insert(char);
@@ -95,7 +95,7 @@ fn find_start_message_performant(input: &str) -> usize {
     panic!("didnt find start of message");
 }
 
-fn find_dup_pos_right(buffer: &RotatingBuffer) -> Option<usize> {
+fn find_dup_pos_right(buffer: &RingBuffer) -> Option<usize> {
     let mut seen: HashSet<char> = HashSet::new();
     for i in buffer.iter().rev() {
         let c = buffer.get(i);
