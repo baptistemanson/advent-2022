@@ -1,5 +1,12 @@
 use std::collections::HashMap;
 
+type Path = String;
+type Fs = HashMap<Path, Dir>;
+
+// if we assume the ls are done in a particular order,
+// we could simplify this, by computing directly the sum
+// like here: https://github.com/Lysander6/advent-of-code-2022/blob/master/day_07/src/main.rs
+
 #[derive(PartialEq, Debug)]
 enum LsEntry {
     File(usize),
@@ -19,10 +26,6 @@ struct Dir {
     file_size: usize,
     total_size: Option<usize>,
 }
-
-type Path = String;
-
-type Fs = HashMap<Path, Dir>;
 
 fn parse_cmd(cmd: &str) -> Cmd {
     let (cmd, res) = cmd.split_once('\n').unwrap_or((cmd, ""));
@@ -70,47 +73,47 @@ fn compute_total_size(path: String, fs: &mut Fs) -> usize {
     }
 }
 
-fn parse_and_compute_fs(cmds: &str) -> Fs {
+fn parse_fs(cmds: &str) -> Fs {
     let mut fs = Fs::new();
-    let mut current_path = vec![];
-    cmds.split("$ ")
-        .map(|cmd| parse_cmd(cmd))
-        .for_each(|cmd| match cmd {
-            Cmd::CdRoot => current_path = vec![String::from("")],
-            Cmd::CdUp => {
-                current_path.pop();
-            }
-            Cmd::CdDown(dir_name) => {
-                current_path.push(dir_name);
-            }
-            Cmd::Ls(entries) => {
-                let wd = current_path.join("/");
-                let mut file_size = 0;
-                let mut children: Vec<Path> = vec![];
-                assert!(!fs.contains_key(&wd));
-                entries.iter().for_each(|e| match e {
-                    LsEntry::File(size) => {
-                        file_size += size;
-                    }
-                    LsEntry::Dir(name) => {
-                        children.push(format!("{}/{}", wd, name));
-                    }
-                });
-                let dir_info = Dir {
-                    path: wd.clone(),
+    let mut cwd = vec![];
+    cmds.split("$ ").map(parse_cmd).for_each(|cmd| match cmd {
+        Cmd::CdRoot => cwd = vec![String::from("")],
+        Cmd::CdUp => {
+            cwd.pop();
+        }
+        Cmd::CdDown(dir_name) => {
+            cwd.push(dir_name);
+        }
+        Cmd::Ls(entries) => {
+            let wd = cwd.join("/");
+            let mut file_size = 0;
+            let mut children: Vec<Path> = vec![];
+            assert!(!fs.contains_key(&wd));
+            entries.iter().for_each(|e| match e {
+                LsEntry::File(size) => {
+                    file_size += size;
+                }
+                LsEntry::Dir(name) => {
+                    children.push(format!("{}/{}", wd, name));
+                }
+            });
+            fs.insert(
+                wd.clone(),
+                Dir {
+                    path: wd,
                     children,
                     file_size,
                     total_size: None,
-                };
-                fs.insert(wd, dir_info);
-            }
-        });
+                },
+            );
+        }
+    });
     compute_total_size("".to_string(), &mut fs);
     fs
 }
 
 pub fn pb1() {
-    let fs = parse_and_compute_fs(INPUT);
+    let fs = parse_fs(INPUT);
     let tot_of_under_100000 = fs
         .values()
         .map(|e| e.total_size.unwrap())
@@ -119,11 +122,9 @@ pub fn pb1() {
     dbg!(tot_of_under_100000);
 }
 pub fn pb2() {
-    let fs = parse_and_compute_fs(INPUT);
-    let total_available: usize = 70_000_000;
-    let free_needed: usize = 30_000_000;
-    let free_right_now = total_available - fs.get(&"".to_string()).unwrap().total_size.unwrap();
-    let missing = free_needed - free_right_now;
+    let fs = parse_fs(INPUT);
+    let free_right_now = 70_000_000 - fs.get(&"".to_string()).unwrap().total_size.unwrap();
+    let missing = 30_000_000 - free_right_now;
     let min = fs
         .values()
         .map(|e| e.total_size.unwrap())
@@ -132,6 +133,7 @@ pub fn pb2() {
         .unwrap();
     dbg!(min);
 }
+
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
