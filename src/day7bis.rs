@@ -1,184 +1,55 @@
-use std::collections::HashMap;
-
-type Path = String;
-type Fs = HashMap<Path, Dir>;
-
-// if we assume the ls are done in a particular order,
-// we could simplify this, by computing directly the sum
-// like here: https://github.com/Lysander6/advent-of-code-2022/blob/master/day_07/src/main.rs
-// on top of it, we can use .. as a signal to evaluate a directory.
-
-#[derive(PartialEq, Debug)]
-enum LsEntry {
-    File(usize),
-    Dir(String), // will not contain the prefix dir.
-}
-#[derive(PartialEq, Debug)]
-enum Cmd {
-    Ls(Vec<LsEntry>),
-    CdUp,
-    CdRoot,
-    CdDown(String),
-}
-#[derive(PartialEq, Debug, Clone)]
-struct Dir {
-    path: Path,
-    children: Vec<Path>,
-    file_size: usize,
-    total_size: Option<usize>,
-}
-
-fn parse_cmd(cmd: &str) -> Cmd {
-    let (cmd, res) = cmd.split_once('\n').unwrap_or((cmd, ""));
-    match cmd {
-        "cd .." => Cmd::CdUp,
-        "cd /" => Cmd::CdRoot,
-        "ls" => {
-            let entries = res
-                .lines()
-                .map(|entry| {
-                    let (size_or_dir, name) = entry.split_once(' ').unwrap();
-                    if size_or_dir == "dir" {
-                        LsEntry::Dir(String::from(name))
-                    } else {
-                        LsEntry::File(size_or_dir.parse().unwrap())
-                    }
-                })
-                .collect::<Vec<LsEntry>>();
-            Cmd::Ls(entries)
-        }
-        _ => {
-            if !cmd.starts_with("cd ") {
-                panic!("unknown command {}", cmd);
+fn parse_fs(cmds: &str) -> Vec<usize> {
+    let mut size_stack: Vec<usize> = Vec::new();
+    let mut fs: Vec<usize> = Vec::new();
+    cmds.lines().for_each(|cmd| {
+        if cmd.starts_with("$ ls") || cmd.starts_with("dir") {
+            return; // we dont need to act on folder name, as the tree is navigated in depth first.
+        } else if cmd.starts_with("$ cd") {
+            match &cmd[5..] {
+                ".." => {
+                    let last_folder_size = size_stack.pop().unwrap();
+                    fs.push(last_folder_size);
+                    inc_last(&mut size_stack, last_folder_size);
+                }
+                _ => {
+                    // cd folder or cd /
+                    size_stack.push(0);
+                }
             }
-            let (_, folder_name) = cmd.split_once(' ').unwrap();
-            Cmd::CdDown(String::from(folder_name))
-        }
-    }
-}
-
-fn compute_total_size(path: String, fs: &mut Fs) -> usize {
-    let dir = fs.get(&path).unwrap().clone();
-    if dir.total_size.is_some() {
-        return dir.total_size.unwrap();
-    } else {
-        let total_size = dir.file_size
-            + dir
-                .children
-                .iter()
-                .map(|child| compute_total_size(child.to_string(), fs))
-                .sum::<usize>();
-        let dir = fs.get_mut(&path).unwrap();
-        dir.total_size = Some(total_size);
-        return total_size;
-    }
-}
-
-fn parse_fs(cmds: &str) -> Fs {
-    let mut fs = Fs::new();
-    let mut cwd = vec![];
-    cmds.split("$ ").map(parse_cmd).for_each(|cmd| match cmd {
-        Cmd::CdRoot => cwd = vec![String::from("")],
-        Cmd::CdUp => {
-            cwd.pop();
-        }
-        Cmd::CdDown(dir_name) => {
-            cwd.push(dir_name);
-        }
-        Cmd::Ls(entries) => {
-            let wd = cwd.join("/");
-            let mut file_size = 0;
-            let mut children: Vec<Path> = vec![];
-            assert!(!fs.contains_key(&wd));
-            entries.iter().for_each(|e| match e {
-                LsEntry::File(size) => {
-                    file_size += size;
-                }
-                LsEntry::Dir(name) => {
-                    children.push(format!("{}/{}", wd, name));
-                }
-            });
-            fs.insert(
-                wd.clone(),
-                Dir {
-                    path: wd,
-                    children,
-                    file_size,
-                    total_size: None,
-                },
-            );
+        } else {
+            // file with a size
+            let (size, _) = cmd.split_once(' ').unwrap();
+            let file_size = size.parse::<usize>().unwrap();
+            inc_last(&mut size_stack, file_size);
         }
     });
-    compute_total_size("".to_string(), &mut fs);
     fs
 }
 
-pub fn pb1() {
-    let fs = parse_fs(INPUT);
-    let tot_of_under_100000 = fs
-        .values()
-        .map(|e| e.total_size.unwrap())
-        .filter(|e| *e < 100_000)
-        .sum::<usize>();
-    dbg!(tot_of_under_100000);
+fn inc_last(stack: &mut Vec<usize>, size: usize) {
+    let len = stack.len();
+    if len > 0 {
+        stack[len - 1] += size;
+    }
 }
+
+pub fn pb1() {
+    dbg!(parse_fs(INPUT)
+        .iter()
+        .filter(|e| *e < &100_000)
+        .sum::<usize>());
+}
+
 pub fn pb2() {
     let fs = parse_fs(INPUT);
-    let free_right_now = 70_000_000 - fs.get(&"".to_string()).unwrap().total_size.unwrap();
+    let free_right_now = 70_000_000 - fs.first().unwrap();
     let missing = 30_000_000 - free_right_now;
-    let min = fs
-        .values()
-        .map(|e| e.total_size.unwrap())
-        .filter(|e| *e > missing)
-        .min()
-        .unwrap();
+    let min = fs.iter().filter(|e| *e > &missing).min().unwrap();
     dbg!(min);
 }
 
-#[cfg(test)]
-mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
-    use super::*;
-
-    #[test]
-    fn test_parse_cmd_up() {
-        let input = "cd ..";
-        assert_eq!(parse_cmd(&input), Cmd::CdUp);
-    }
-
-    #[test]
-    fn test_parse_cmd_root() {
-        let input = "cd /";
-        assert_eq!(parse_cmd(&input), Cmd::CdRoot);
-    }
-
-    #[test]
-    fn test_parse_cmd_down() {
-        let input = "cd a";
-        assert_eq!(parse_cmd(&input), Cmd::CdDown(String::from("a")));
-    }
-
-    #[test]
-    fn test_parse_cmd_dir() {
-        let input = "ls
-dir a
-14848514 b.txt
-8504156 c.dat
-dir d";
-        assert_eq!(
-            parse_cmd(&input),
-            Cmd::Ls(vec![
-                LsEntry::Dir(String::from("a")),
-                LsEntry::File(14848514),
-                LsEntry::File(8504156),
-                LsEntry::Dir(String::from("d"))
-            ])
-        );
-    }
-}
-
 #[allow(dead_code)]
-const TEST_INPUT: &str = "cd /
+const TEST_INPUT: &str = "$ cd /
 $ ls
 dir a
 14848514 b.txt
@@ -203,7 +74,7 @@ $ ls
 7214296 k";
 
 #[allow(dead_code)]
-const INPUT: &str = "cd /
+const INPUT: &str = "$ cd /
 $ ls
 dir dpllhlcv
 284723 hznrlfhh.tnz

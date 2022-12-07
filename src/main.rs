@@ -7,6 +7,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day7bis;
 
 fn main() {
     let pb = std::env::args().nth(1).expect("expected problem number");
@@ -28,6 +29,8 @@ fn main() {
         "62" => day6::pb2(),
         "71" => day7::pb1(),
         "72" => day7::pb2(),
+        "71bis" => day7bis::pb1(),
+        "72bis" => day7bis::pb2(),
         _ => panic!("unknown problem"),
     }
 }
