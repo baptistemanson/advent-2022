@@ -24,6 +24,7 @@ fn all_different_4(c: &[char; 4]) -> bool {
     c[0] != c[1] && c[0] != c[2] && c[0] != c[3] && c[1] != c[2] && c[1] != c[3] && c[2] != c[3]
 }
 
+#[allow(dead_code)]
 fn find_start_message(input: &str) -> usize {
     const SIZE: usize = 14;
     let mut last_chars: [char; SIZE] = [' '; SIZE];
