@@ -3,7 +3,7 @@ fn parse_fs(cmds: &str) -> Vec<usize> {
     let mut fs: Vec<usize> = Vec::new();
     cmds.lines().for_each(|cmd| {
         if cmd.starts_with("$ ls") || cmd.starts_with("dir") {
-            return; // we dont need to act on folder name, as the tree is navigated in depth first.
+            return;
         } else if cmd.starts_with("$ cd") {
             match &cmd[5..] {
                 ".." => {
@@ -18,19 +18,16 @@ fn parse_fs(cmds: &str) -> Vec<usize> {
             }
         } else {
             // file with a size
-            let (size, _) = cmd.split_once(' ').unwrap();
-            let file_size = size.parse::<usize>().unwrap();
-            inc_last(&mut size_stack, file_size);
+            let size = cmd.split_once(' ').unwrap().0;
+            inc_last(&mut size_stack, size.parse::<usize>().unwrap());
         }
     });
     fs
 }
 
 fn inc_last(stack: &mut Vec<usize>, size: usize) {
-    let len = stack.len();
-    if len > 0 {
-        stack[len - 1] += size;
-    }
+    let last = stack.last_mut().unwrap();
+    *last += size;
 }
 
 pub fn pb1() {
@@ -44,8 +41,7 @@ pub fn pb2() {
     let fs = parse_fs(INPUT);
     let free_right_now = 70_000_000 - fs.first().unwrap();
     let missing = 30_000_000 - free_right_now;
-    let min = fs.iter().filter(|e| *e > &missing).min().unwrap();
-    dbg!(min);
+    dbg!(fs.iter().filter(|e| *e > &missing).min().unwrap());
 }
 
 #[allow(dead_code)]
