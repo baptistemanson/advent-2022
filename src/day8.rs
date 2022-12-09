@@ -1,7 +1,3 @@
-use std::ops::Range;
-
-use itertools::Itertools;
-
 pub fn pb1() {
     let input = INPUT;
     let width = input.split_once('\n').unwrap().0.chars().count();
@@ -50,18 +46,12 @@ pub fn pb2() {
     let input = INPUT;
     let width = input.split_once('\n').unwrap().0.chars().count();
     let height = input.len() / width;
-    let mut up = vec![vec![0; width]; height];
-    let mut down = vec![vec![0; width]; height];
-    let mut left = vec![vec![0; width]; height];
-    let mut right = vec![vec![0; width]; height];
     let trees = parse(input);
-    compute_viewing_distance(&trees, &mut left, 0..height, 0..width, false);
-    compute_viewing_distance(&trees, &mut right, 0..height, (0..width).rev(), false);
-    compute_viewing_distance(&trees, &mut up, 0..width, 0..height, true);
-    compute_viewing_distance(&trees, &mut down, 0..width, (0..height).rev(), true);
-
-    // let v = down.iter().map(|r| r.iter().join("")).join("\n");
-    let v = left
+    let left = compute_viewing_distance(&trees, 0..height, 0..width, false, width, height);
+    let right = compute_viewing_distance(&trees, 0..height, (0..width).rev(), false, width, height);
+    let up = compute_viewing_distance(&trees, 0..width, 0..height, true, width, height);
+    let down = compute_viewing_distance(&trees, 0..width, (0..height).rev(), true, width, height);
+    let res = left
         .iter()
         .flatten()
         .zip(right.iter().flatten())
@@ -69,7 +59,7 @@ pub fn pb2() {
         .zip(down.iter().flatten())
         .map(|(((l, r), u), d)| l * r * u * d)
         .max();
-    dbg!(v);
+    dbg!(res);
 }
 
 fn parse(input: &str) -> Vec<Vec<u32>> {
@@ -89,11 +79,13 @@ fn compute_viewing_distance<
     RangeOrRev2: Iterator<Item = usize> + Clone,
 >(
     trees: &Vec<Vec<u32>>,
-    scenic: &mut Vec<Vec<u32>>,
     seq1: RangeOrRev1,
     seq2: RangeOrRev2,
     is_vertical: bool,
-) {
+    width: usize,
+    height: usize,
+) -> Vec<Vec<u32>> {
+    let mut scenic = vec![vec![0; width]; height];
     for x in seq1 {
         let mut curr_distance = [0 as u32; 10];
         for y in seq2.clone() {
@@ -105,6 +97,7 @@ fn compute_viewing_distance<
             });
         }
     }
+    scenic
 }
 
 #[allow(dead_code)]
