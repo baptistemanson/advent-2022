@@ -8,54 +8,45 @@ pub fn pb2() {
     dbg!(count_tail_visited(10));
 }
 
-fn add(a: (i32, i32), b: (i32, i32)) -> (i32, i32) {
-    (a.0 + b.0, a.1 + b.1)
-}
-
-fn sub(a: (i32, i32), b: (i32, i32)) -> (i32, i32) {
-    (a.0 - b.0, a.1 - b.1)
-}
-
-fn new_rel(rel: (i32, i32), dir: (i32, i32)) -> (i32, i32) {
-    let mut r = add(rel, dir);
-    if r.1.abs() == 2 {
-        r.0 -= r.0.signum();
-        r.1 = r.1.signum();
-    } else if r.0.abs() == 2 {
-        r.0 = r.0.signum();
-        r.1 -= r.1.signum();
-    }
-    r
-}
-
 fn count_tail_visited(len: usize) -> usize {
-    let mut visited: HashSet<(i32, i32)> = HashSet::new();
-    let mut pos = vec![(0, 0); len];
-    let mut rel = vec![(0, 0); len];
-    visited.insert(pos[len - 1]);
-    INPUT.lines().for_each(|l| {
-        let res = l.split_once(" ").unwrap();
-        let (direction, iteration) = (res.0, res.1.parse::<i32>().unwrap());
-        let direction = match direction {
-            "R" => (0, 1),
-            "L" => (0, -1),
-            "U" => (1, 0),
-            "D" => (-1, 0),
+    let mut visited: HashSet<(i16, i16)> = HashSet::new();
+    let mut rope = vec![(0, 0); len];
+    visited.insert(*rope.last().unwrap());
+    for l in INPUT.lines() {
+        let (dir, repeat) = l.split_once(" ").unwrap();
+        let dir = match dir {
+            "R" => (0, -1), // I use sub so signs are opposite :)
+            "L" => (0, 1),
+            "U" => (-1, 0),
+            "D" => (1, 0),
             _ => panic!("doesnt understand the command"),
         };
-        for _ in 0..iteration {
-            let mut dir = direction.clone();
-            pos[0] = add(pos[0], dir);
+        let repeat = repeat.parse::<i16>().unwrap();
+        for _ in 0..repeat {
+            rope[0] = sub(rope[0], dir);
             for k in 1..len {
-                rel[k] = new_rel(rel[k], dir);
-                let new_pos = sub(pos[k - 1], rel[k]);
-                dir = sub(new_pos, pos[k]);
-                pos[k] = new_pos;
+                rope[k] = derive_pos(rope[k - 1], rope[k]);
             }
-            visited.insert(pos[len - 1]);
+            visited.insert(*rope.last().unwrap());
         }
-    });
+    }
     visited.iter().count()
+}
+
+fn derive_pos(parent: (i16, i16), child: (i16, i16)) -> (i16, i16) {
+    let mut delta = sub(parent, child);
+    if delta.1.abs() == 2 {
+        delta.1 = delta.1.signum(); // 2 -> 1, -2 -> -1
+        delta.0 -= delta.0.signum(); // bridge the gap if any
+    } else if delta.0.abs() == 2 {
+        delta.0 = delta.0.signum();
+        delta.1 -= delta.1.signum();
+    }
+    sub(parent, delta) // P - d(P - C), but d is not linear.
+}
+
+fn sub(a: (i16, i16), b: (i16, i16)) -> (i16, i16) {
+    (a.0 - b.0, a.1 - b.1)
 }
 
 #[allow(dead_code)]
