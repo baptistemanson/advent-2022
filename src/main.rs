@@ -1,5 +1,6 @@
 #![feature(iter_array_chunks)]
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day3bis;
@@ -38,6 +39,8 @@ fn main() {
         "82" => day8::pb2(),
         "91" => day9::pb1(),
         "92" => day9::pb2(),
+        "101" => day10::pb1(),
+        "102" => day10::pb2(),
         "playground" => playground::main(),
         _ => panic!("unknown problem"),
     }

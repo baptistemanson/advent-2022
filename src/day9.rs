@@ -24,25 +24,19 @@ fn count_tail_visited(len: usize) -> usize {
         let repeat = repeat.parse::<i16>().unwrap();
         for _ in 0..repeat {
             rope[0] = sub(rope[0], dir);
-            for k in 1..len {
-                rope[k] = derive_pos(rope[k - 1], rope[k]);
-            }
+            (1..len).for_each(|k| derive_pos(rope[k - 1], &mut rope[k]));
             visited.insert(*rope.last().unwrap());
         }
     }
     visited.iter().count()
 }
 
-fn derive_pos(parent: (i16, i16), child: (i16, i16)) -> (i16, i16) {
-    let mut delta = sub(parent, child);
-    if delta.1.abs() == 2 {
-        delta.1 = delta.1.signum(); // 2 -> 1, -2 -> -1
-        delta.0 -= delta.0.signum(); // bridge the gap if any
-    } else if delta.0.abs() == 2 {
-        delta.0 = delta.0.signum();
-        delta.1 -= delta.1.signum();
+fn derive_pos(parent: (i16, i16), child: &mut (i16, i16)) {
+    let (dx, dy) = sub(parent, *child);
+    if dx.abs() > 1 || dy.abs() > 1 {
+        child.0 += dx.signum();
+        child.1 += dy.signum();
     }
-    sub(parent, delta) // P - d(P - C), but d is not linear.
 }
 
 fn sub(a: (i16, i16), b: (i16, i16)) -> (i16, i16) {
