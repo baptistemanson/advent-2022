@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 pub fn pb1() {
     let mut out = 0;
     let mut tick = |c: &mut i32, r| {
@@ -12,15 +10,15 @@ pub fn pb1() {
     dbg!(out);
 }
 pub fn pb2() {
-    let mut px: Vec<Vec<&str>> = vec![vec!["_"; 40]; 6];
     let mut tick = |c: &mut i32, r: i32| {
-        let x = (*c / 40) as usize;
-        let y = (*c % 40) as usize;
-        px[x][y] = if (r - y as i32).abs() <= 1 { "#" } else { "." };
+        let y = (*c % 40) as i32;
+        if y == 0 {
+            print!("\n");
+        }
+        print!("{}", if (r - y).abs() <= 1 { "█" } else { " " });
         *c += 1;
     };
     process(&mut tick, 0, 1);
-    print!("{}", px.iter().map(|l| l.join("")).join("\n"));
 }
 
 fn process<F: FnMut(&mut i32, i32)>(tick: &mut F, mut clock: i32, mut reg: i32) {
