@@ -1,13 +1,13 @@
 pub fn pb1() {
-    let mut out = 0;
+    let mut sum = 0;
     let mut tick = |c: &mut i32, r| {
         *c += 1;
         if (*c - 20) % 40 == 0 {
-            out += *c * r;
+            sum += *c * r;
         }
     };
     process(&mut tick, 0, 1);
-    dbg!(out);
+    dbg!(sum);
 }
 pub fn pb2() {
     let mut tick = |c: &mut i32, r: i32| {
