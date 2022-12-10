@@ -15,7 +15,7 @@ pub fn pb2() {
         if y == 0 {
             print!("\n");
         }
-        print!("{}", if (r - y).abs() <= 1 { "█" } else { " " });
+        print!("{}", if (r - y).abs() < 2 { "█" } else { " " });
         *c += 1;
     };
     process(&mut tick, 0, 1);
