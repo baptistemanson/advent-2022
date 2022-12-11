@@ -14,36 +14,32 @@ struct Monkey {
 }
 
 pub fn pb1() {
-    let (monkeys, mut items) = parse_cmd();
-    let mut inspected: Vec<usize> = vec![0; monkeys.len()];
-    let f = |m, items: &mut Vec<Vec<i64>>, i: i64| {
+    let (monkeys, items) = parse_cmd();
+    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
         let t = i.div_floor(3);
         items[test(m, t)].push(t);
     };
-    for _ in 0..20 {
-        for (m_n, m) in monkeys.iter().enumerate() {
-            inspected[m_n] += items[m_n].len();
-            items[m_n]
-                .clone()
-                .iter()
-                .map(|i| apply(&m.op, *i))
-                .for_each(|i| f(&m, &mut items, i));
-            items[m_n] = vec![];
-        }
-    }
-    inspected.sort();
-    dbg!(inspected.iter().rev().take(2).fold(1, |a, acc| a * acc));
+    process(monkeys, items, f, 20);
 }
 
 pub fn pb2() {
-    let (monkeys, mut items) = parse_cmd();
-    let mut inspected: Vec<usize> = vec![0; monkeys.len()];
+    let (monkeys, items) = parse_cmd();
     // chinese remainder
     let prod_all = monkeys.iter().map(|m| m.div).fold(1, |acc, x| acc * x);
-    let f = |m, items: &mut Vec<Vec<i64>>, i: i64| {
+    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
         items[test(m, i)].push(i % prod_all);
     };
-    for _ in 0..10_000 {
+    process(monkeys, items, f, 10_000);
+}
+
+fn process<T: Fn(&Monkey, &mut Vec<Vec<i64>>, i64)>(
+    monkeys: Vec<Monkey>,
+    mut items: Vec<Vec<i64>>,
+    f: T,
+    iteration: usize,
+) {
+    let mut inspected: Vec<usize> = vec![0; monkeys.len()];
+    for _ in 0..iteration {
         for (m_n, m) in monkeys.iter().enumerate() {
             inspected[m_n] += items[m_n].len();
             items[m_n]
