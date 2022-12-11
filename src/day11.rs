@@ -1,4 +1,46 @@
 use itertools::Itertools;
+
+pub fn pb1() {
+    let (monkeys, items) = parse_cmd();
+    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
+        let t = i.div_floor(3);
+        items[which_dest(m, t)].push(t);
+    };
+    juggle(monkeys, items, f, 20);
+}
+
+pub fn pb2() {
+    let (monkeys, items) = parse_cmd();
+    // chinese remainder
+    let prod_all: i64 = monkeys.iter().map(|m| m.div).product();
+    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
+        items[which_dest(m, i)].push(i % prod_all);
+    };
+    juggle(monkeys, items, f, 10_000);
+}
+
+fn juggle<T: Fn(&Monkey, &mut Vec<Vec<i64>>, i64)>(
+    monkeys: Vec<Monkey>,
+    mut items: Vec<Vec<i64>>,
+    f: T,
+    iteration: usize,
+) {
+    let mut inspected: Vec<usize> = vec![0; monkeys.len()];
+    for _ in 0..iteration {
+        for (m_n, m) in monkeys.iter().enumerate() {
+            inspected[m_n] += items[m_n].len();
+            items[m_n]
+                .clone()
+                .iter()
+                .map(|i| apply_op(&m.op, *i))
+                .for_each(|i| f(&m, &mut items, i));
+            items[m_n] = vec![];
+        }
+    }
+    inspected.sort();
+    dbg!(inspected.iter().rev().take(2).fold(1, |a, acc| a * acc));
+}
+
 #[derive(Debug)]
 enum Op {
     Add(i64),
@@ -13,48 +55,7 @@ struct Monkey {
     if_false: usize,
 }
 
-pub fn pb1() {
-    let (monkeys, items) = parse_cmd();
-    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
-        let t = i.div_floor(3);
-        items[test(m, t)].push(t);
-    };
-    process(monkeys, items, f, 20);
-}
-
-pub fn pb2() {
-    let (monkeys, items) = parse_cmd();
-    // chinese remainder
-    let prod_all = monkeys.iter().map(|m| m.div).fold(1, |acc, x| acc * x);
-    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
-        items[test(m, i)].push(i % prod_all);
-    };
-    process(monkeys, items, f, 10_000);
-}
-
-fn process<T: Fn(&Monkey, &mut Vec<Vec<i64>>, i64)>(
-    monkeys: Vec<Monkey>,
-    mut items: Vec<Vec<i64>>,
-    f: T,
-    iteration: usize,
-) {
-    let mut inspected: Vec<usize> = vec![0; monkeys.len()];
-    for _ in 0..iteration {
-        for (m_n, m) in monkeys.iter().enumerate() {
-            inspected[m_n] += items[m_n].len();
-            items[m_n]
-                .clone()
-                .iter()
-                .map(|i| apply(&m.op, *i))
-                .for_each(|i| f(&m, &mut items, i));
-            items[m_n] = vec![];
-        }
-    }
-    inspected.sort();
-    dbg!(inspected.iter().rev().take(2).fold(1, |a, acc| a * acc));
-}
-
-fn test(m: &Monkey, n: i64) -> usize {
+fn which_dest(m: &Monkey, n: i64) -> usize {
     if n % m.div == 0 {
         m.if_true
     } else {
@@ -62,7 +63,7 @@ fn test(m: &Monkey, n: i64) -> usize {
     }
 }
 
-fn apply(op: &Op, n: i64) -> i64 {
+fn apply_op(op: &Op, n: i64) -> i64 {
     match op {
         Op::Add(x) => n + x,
         Op::Mul(x) => n * x,
