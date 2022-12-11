@@ -2,39 +2,34 @@ use itertools::Itertools;
 
 pub fn pb1() {
     let (monkeys, items) = parse_cmd();
-    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
-        let t = i.div_floor(3);
-        items[which_dest(m, t)].push(t);
-    };
-    juggle(monkeys, items, f, 20);
+    let next_panic = |m: &Monkey, i: i64| -> i64 { apply_op(&m.op, i).div_floor(3) };
+    juggle(monkeys, items, next_panic, 20);
 }
 
 pub fn pb2() {
     let (monkeys, items) = parse_cmd();
     // chinese remainder
     let prod_all: i64 = monkeys.iter().map(|m| m.div).product();
-    let f = |m: &Monkey, items: &mut Vec<Vec<i64>>, i: i64| {
-        items[which_dest(m, i)].push(i % prod_all);
-    };
-    juggle(monkeys, items, f, 10_000);
+    let next_panic = |m: &Monkey, i: i64| -> i64 { apply_op(&m.op, i) % prod_all };
+    juggle(monkeys, items, next_panic, 10_000);
 }
 
-fn juggle<T: Fn(&Monkey, &mut Vec<Vec<i64>>, i64)>(
+fn juggle<F: Fn(&Monkey, i64) -> i64>(
     monkeys: Vec<Monkey>,
     mut items: Vec<Vec<i64>>,
-    f: T,
+    next_panic: F,
     iteration: usize,
 ) {
     let mut inspected: Vec<usize> = vec![0; monkeys.len()];
     for _ in 0..iteration {
-        for (m_n, m) in monkeys.iter().enumerate() {
-            inspected[m_n] += items[m_n].len();
-            items[m_n]
+        for (idx, monkey) in monkeys.iter().enumerate() {
+            inspected[idx] += items[idx].len();
+            items[idx]
                 .clone()
                 .iter()
-                .map(|i| apply_op(&m.op, *i))
-                .for_each(|i| f(&m, &mut items, i));
-            items[m_n] = vec![];
+                .map(|i| next_panic(&monkey, *i))
+                .for_each(|i| items[which_dest(monkey, i)].push(i));
+            items[idx] = vec![];
         }
     }
     inspected.sort();
