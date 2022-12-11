@@ -13,7 +13,7 @@ pub fn pb2() {
     let mut tick = |c: &mut i32, r: i32| {
         let y = (*c % 40) as i32;
         if y == 0 {
-            print!("\n");
+            println!("");
         }
         print!("{}", if (r - y).abs() < 2 { "█" } else { " " });
         *c += 1;
