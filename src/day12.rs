@@ -22,9 +22,9 @@ fn navigate<F: Fn(Pos, Pos) -> bool>(end: Pos, heights: &Heights, check: F) -> u
     let mut dists = vec![vec![0 as u16; dim.1 as usize]; dim.0 as usize];
     let mut curr_dist: u16 = 1;
     let mut to_scan = vec![end];
+    let mut next = vec![];
     loop {
-        let mut next = vec![];
-        for pos in to_scan {
+        for pos in to_scan.drain(..) {
             for n_pos in [(-1, 0), (0, -1), (0, 1), (1, 0)] {
                 let n_pos = match add_within_bounds(pos, n_pos, dim) {
                     Some(value) => value,
@@ -41,7 +41,7 @@ fn navigate<F: Fn(Pos, Pos) -> bool>(end: Pos, heights: &Heights, check: F) -> u
             }
         }
         curr_dist += 1;
-        to_scan = next;
+        std::mem::swap(&mut to_scan, &mut next); // reduce allocations
         if to_scan.len() == 0 {
             panic!("no solution");
         }
@@ -81,14 +81,14 @@ fn parse_input(input: &str) -> (Pos, Pos, Heights) {
                 .map(|(y, c)| match c {
                     'S' => {
                         start = (x as isize, y as isize);
-                        0
+                        'a'
                     }
                     'E' => {
                         end = (x as isize, y as isize);
-                        'z' as u8 - 'a' as u8
+                        'z'
                     }
-                    o => o as u8 - 'a' as u8,
-                })
+                    o => o,
+                } as u8 - 'a' as u8)
                 .collect_vec()
         })
         .collect_vec();
