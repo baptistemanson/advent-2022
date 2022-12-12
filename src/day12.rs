@@ -12,7 +12,7 @@ pub fn pb1() {
 pub fn pb2() {
     let (_, end, heights) = parse_input(INPUT);
     let check = |pos: Pos, neighbour: Pos| -> bool {
-        get(neighbour, &heights) == 0 && is_within_one(pos, neighbour, &heights)
+        heights.get(neighbour) == 0 && is_within_one(pos, neighbour, &heights)
     };
     println!("{}", navigate(end, &heights, check));
 }
@@ -34,7 +34,7 @@ fn navigate<F: Fn(Pos, Pos) -> bool>(end: Pos, heights: &Heights, check: F) -> u
                     return curr_dist;
                 }
                 // not end, not already set, one height diff max => register
-                if n_pos != end && get(n_pos, &dists) == 0 && is_within_one(pos, n_pos, &heights) {
+                if n_pos != end && dists.get(n_pos) == 0 && is_within_one(pos, n_pos, &heights) {
                     dists[n_pos.0 as usize][n_pos.1 as usize] = curr_dist;
                     next.push(n_pos);
                 }
@@ -48,21 +48,25 @@ fn navigate<F: Fn(Pos, Pos) -> bool>(end: Pos, heights: &Heights, check: F) -> u
     }
 }
 
-fn is_within_one(pos: Pos, neighbour: Pos, heights: &Heights) -> bool {
-    get(pos, heights) as i16 - get(neighbour, heights) as i16 <= 1
+trait Matrix<T: Copy> {
+    fn get(&self, pos: Pos) -> T;
+}
+impl<T: Copy> Matrix<T> for Vec<Vec<T>> {
+    fn get(&self, pos: Pos) -> T {
+        self[pos.0 as usize][pos.1 as usize]
+    }
 }
 
-fn get<T: Copy>(pos: Pos, a: &Vec<Vec<T>>) -> T {
-    a[pos.0 as usize][pos.1 as usize]
-}
-
-fn add_within_bounds(a: Pos, b: Pos, dim: Pos) -> Option<Pos> {
+fn add_within_bounds(a: Pos, b: Pos, bounds: Pos) -> Option<Pos> {
     let n = (a.0 + b.0, a.1 + b.1);
     // out of bounds
-    if n.0 < 0 || n.1 < 0 || n.0 >= dim.0 || n.1 >= dim.1 {
+    if n.0 < 0 || n.1 < 0 || n.0 >= bounds.0 || n.1 >= bounds.1 {
         return None;
     }
     Some(n)
+}
+fn is_within_one(pos: Pos, neighbour: Pos, heights: &Heights) -> bool {
+    heights.get(pos) as i16 - heights.get(neighbour) as i16 <= 1
 }
 
 fn parse_input(input: &str) -> (Pos, Pos, Heights) {
