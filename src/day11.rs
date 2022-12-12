@@ -8,7 +8,11 @@ pub fn pb1() {
 
 pub fn pb2() {
     let (monkeys, items) = parse_cmd();
+    // as m(i) are coprimes,
+    // x % m(i) == (x % ∏ m(k)) % m(i)
     // chinese remainder
+    // solutions solving a system of coprime congruences m(i)
+    // have a solution, modulo ∏ m(k).
     let prod_all: i64 = monkeys.iter().map(|m| m.div).product();
     let next_panic = |m: &Monkey, i: i64| -> i64 { apply_op(&m.op, i) % prod_all };
     juggle(monkeys, items, next_panic, 10_000);

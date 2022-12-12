@@ -3,6 +3,7 @@
 mod day1;
 mod day10;
 mod day11;
+mod day12;
 mod day2;
 mod day3;
 mod day3bis;
@@ -45,6 +46,8 @@ fn main() {
         "102" => day10::pb2(),
         "111" => day11::pb1(),
         "112" => day11::pb2(),
+        "121" => day12::pb1(),
+        "122" => day12::pb2(),
         "playground" => playground::main(),
         _ => panic!("unknown problem"),
     }
