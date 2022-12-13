@@ -4,12 +4,9 @@ use std::cmp::Ordering;
 
 pub fn pb1() {
     let mut sum = 0;
-    let parsed = parse(INPUT);
-    let mut parsed = parsed.iter().enumerate();
-    while let Some((_, p1)) = parsed.next() {
-        let (i, p2) = parsed.by_ref().next().unwrap();
-        if p1.cmp(&p2) != Ordering::Greater {
-            sum += i / 2 + 1;
+    for (i, p) in parse(INPUT).chunks(2).enumerate() {
+        if p[0].cmp(&p[1]) != Ordering::Greater {
+            sum += i + 1;
         }
     }
     assert_eq!(sum, 5506);
@@ -17,8 +14,8 @@ pub fn pb1() {
 
 pub fn pb2() {
     let mut parsed = parse(INPUT);
-    let mut delim = vec![P::L(vec![P::I(2)]), P::L(vec![P::I(6)])];
-    parsed.append(&mut delim);
+    let delim = vec![P::L(vec![P::I(2)]), P::L(vec![P::I(6)])];
+    parsed.append(&mut delim.clone());
     parsed.sort();
     let p: usize = delim
         .iter()
@@ -42,29 +39,12 @@ impl PartialOrd for P {
 impl Ord for P {
     // return 1 if p1 smaller, -1 if p1 bigger
     fn cmp(&self, other: &P) -> Ordering {
-        return match (self, other) {
+        match (self, other) {
             (P::I(a), P::I(b)) => a.cmp(b), // are both integer
             (P::I(_), P::L(_)) => P::L(vec![self.clone()]).cmp(other), // wraps the integer into a list
             (P::L(_), P::I(_)) => self.cmp(&P::L(vec![other.clone()])), // wraps the integer into a list
-            (P::L(l1), P::L(l2)) => match (l1.len(), l2.len()) {
-                // comparing list
-                // if one is empty
-                (0, 0) => Ordering::Equal,
-                (0, _) => Ordering::Less,
-                (_, 0) => Ordering::Greater,
-                _ => {
-                    // otherwise
-                    let c = l1[0].cmp(&l2[0]);
-                    if c != Ordering::Equal {
-                        // compare heads
-                        c
-                    } else {
-                        // then tails if required
-                        P::L(l1[1..].to_vec()).cmp(&P::L(l2[1..].to_vec()))
-                    }
-                }
-            },
-        };
+            (P::L(l1), P::L(l2)) => l1.cmp(l2),
+        }
     }
 }
 
@@ -89,7 +69,6 @@ fn parse_pl(input: &str) -> P {
     while let Some(c) = chars.next() {
         match c {
             '[' => {
-                // incorrect
                 let mut nb_brackets = 1;
                 let array_str = chars
                     .by_ref()
@@ -118,11 +97,6 @@ fn parse_pl(input: &str) -> P {
     }
     P::L(output)
 }
-
-#[allow(dead_code)]
-const INPUT_CUSTOM: &str = "\
-[2]
-[[1]]";
 
 #[allow(dead_code)]
 const INPUT_TEST: &str = "\
