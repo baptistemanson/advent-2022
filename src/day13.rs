@@ -13,13 +13,13 @@ pub fn pb1() {
 }
 
 pub fn pb2() {
-    let mut parsed = parse(INPUT);
     let delim = vec![P::L(vec![P::I(2)]), P::L(vec![P::I(6)])];
+    let mut parsed = parse(INPUT);
     parsed.append(&mut delim.clone());
     parsed.sort();
     let p: usize = delim
         .iter()
-        .map(|p| parsed.iter().position(|a| *a == *p).unwrap() + 1 as usize)
+        .map(|p| parsed.iter().position(|a| a == p).unwrap() + 1 as usize)
         .product();
     assert_eq!(p, 21756);
 }
@@ -37,13 +37,12 @@ impl PartialOrd for P {
     }
 }
 impl Ord for P {
-    // return 1 if p1 smaller, -1 if p1 bigger
     fn cmp(&self, other: &P) -> Ordering {
         match (self, other) {
-            (P::I(a), P::I(b)) => a.cmp(b), // are both integer
-            (P::I(_), P::L(_)) => P::L(vec![self.clone()]).cmp(other), // wraps the integer into a list
-            (P::L(_), P::I(_)) => self.cmp(&P::L(vec![other.clone()])), // wraps the integer into a list
+            (P::I(a), P::I(b)) => a.cmp(b),
             (P::L(l1), P::L(l2)) => l1.cmp(l2),
+            (P::I(a), P::L(_)) => P::L(vec![P::I(*a)]).cmp(other),
+            (P::L(_), P::I(b)) => self.cmp(&P::L(vec![P::I(*b)])),
         }
     }
 }
@@ -52,18 +51,11 @@ fn parse(input: &str) -> Vec<P> {
     input
         .lines()
         .filter(|l| !l.is_empty())
-        .map(|l| parse_pl(rem_first_and_last(l)))
+        .map(|l| parse_list(&l[1..l.len() - 1]))
         .collect_vec()
 }
 
-fn rem_first_and_last(value: &str) -> &str {
-    let mut chars = value.chars();
-    chars.next();
-    chars.next_back();
-    chars.as_str()
-}
-
-fn parse_pl(input: &str) -> P {
+fn parse_list(input: &str) -> P {
     let mut chars = input.chars();
     let mut output = vec![];
     while let Some(c) = chars.next() {
@@ -75,19 +67,18 @@ fn parse_pl(input: &str) -> P {
                     .take_while(|e| {
                         if *e == '[' {
                             nb_brackets += 1
-                        };
-                        if *e == ']' {
+                        } else if *e == ']' {
                             nb_brackets -= 1
                         };
                         nb_brackets != 0
                     })
                     .collect::<String>();
-                output.push(parse_pl(&array_str));
+                output.push(parse_list(&array_str));
             }
             ']' => panic!("unmatching parenthesis {}", chars.collect::<String>()),
             ',' => {
-                continue;
-            } // comma after arrays
+                continue; // comma after arrays
+            }
             digit => {
                 let nb = chars.by_ref().take_while(|e| *e != ',').collect::<String>();
                 let nb = (digit.to_string() + &nb).parse::<i16>().unwrap();
