@@ -17,8 +17,8 @@ pub fn pb1() {
 
 pub fn pb2() {
     let mut parsed = parse(INPUT);
-    let delim = vec![P::L(vec![P::I(2)]), P::L(vec![P::I(6)])];
-    parsed.append(&mut delim.clone());
+    let mut delim = vec![P::L(vec![P::I(2)]), P::L(vec![P::I(6)])];
+    parsed.append(&mut delim);
     parsed.sort();
     let p: usize = delim
         .iter()
