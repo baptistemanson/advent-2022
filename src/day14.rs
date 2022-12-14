@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 #[allow(unused_imports)]
 use crate::debug::display;
 use itertools::Itertools;
@@ -49,34 +51,30 @@ impl ToString for T {
 }
 struct World {
     cave: Vec<Vec<T>>,
-    left: usize,
-    right: usize,
     bottom: usize,
 }
 
 fn simulate(mut world: World, should_check_bound: bool) -> World {
-    let mut curr_sand = (0, 500);
+    let spawn = (0, 500);
+    let mut sand = spawn;
     loop {
-        if world.cave[curr_sand.0 + 1][curr_sand.1] == T::Air {
-            curr_sand.0 += 1; // down
-        } else if world.cave[curr_sand.0 + 1][curr_sand.1 - 1] == T::Air {
-            curr_sand.0 += 1; // left
-            curr_sand.1 -= 1;
-        } else if world.cave[curr_sand.0 + 1][curr_sand.1 + 1] == T::Air {
-            curr_sand.0 += 1; // right
-            curr_sand.1 += 1;
+        if world.cave[sand.0 + 1][sand.1] == T::Air {
+            sand.0 += 1; // down
+        } else if world.cave[sand.0 + 1][sand.1 - 1] == T::Air {
+            sand.0 += 1; // left
+            sand.1 -= 1;
+        } else if world.cave[sand.0 + 1][sand.1 + 1] == T::Air {
+            sand.0 += 1; // right
+            sand.1 += 1;
         } else {
-            world.cave[curr_sand.0][curr_sand.1] = T::Sand; // rest
-            if curr_sand.0 == 0 && curr_sand.1 == 500 {
+            world.cave[sand.0][sand.1] = T::Sand; // rest
+            if sand.0 == spawn.0 && sand.1 == spawn.1 {
                 return world; // if we cannot spawn anymore
             }
-            curr_sand = (0, 500); // spawn
+            sand = spawn; // spawn
         }
         if should_check_bound {
-            if curr_sand.0 == world.bottom
-                || curr_sand.1 == world.left
-                || curr_sand.1 == world.right
-            {
+            if sand.0 == world.bottom {
                 return world;
             }
         };
@@ -84,9 +82,6 @@ fn simulate(mut world: World, should_check_bound: bool) -> World {
 }
 
 fn parse_input(s: &str, should_be_bound: bool) -> World {
-    let mut left = 500;
-    let mut right = 500;
-    let mut bottom = 0;
     let lines = s
         .lines()
         .map(|l| {
@@ -101,73 +96,48 @@ fn parse_input(s: &str, should_be_bound: bool) -> World {
         })
         .collect_vec();
     // find boundaries
-    lines.iter().for_each(|l| {
-        l.iter().for_each(|(x, y)| {
-            if *x < left {
-                left = *x;
-            }
-            if *x > right {
-                right = *x;
-            }
-            if *y > bottom {
-                bottom = *y;
-            };
-        })
-    });
+    let right = lines
+        .iter()
+        .map(|l| l.iter().map(|p| p.0).max().unwrap())
+        .max()
+        .unwrap(); // we assume there are stuff on the right of the spawn
+    let bottom = lines
+        .iter()
+        .map(|l| l.iter().map(|p| p.1).max().unwrap())
+        .max()
+        .unwrap();
+
     let (h, w) = if should_be_bound {
-        (right + 2, bottom + 2)
+        (right + 2, bottom + 3)
     } else {
-        (right + 500, bottom + 3)
+        (500 * 2, bottom + 3)
     };
     let mut cave: Vec<Vec<T>> = vec![vec![T::Air; h as usize]; w as usize];
     let last = cave.last_mut().unwrap();
     *last = vec![T::Rock; h as usize];
 
-    let mut add_rock = |(x, y): (i32, i32)| {
-        cave[y as usize][x as usize] = T::Rock;
-    };
     lines.iter().for_each(|points| {
         let mut points = points.iter();
         let mut start = *points.next().unwrap();
-        add_rock(start);
+        cave[start.1 as usize][start.0 as usize] = T::Rock;
         points.for_each(|(dest_x, dest_y)| {
+            // raster, if we assume we only get path left to right and bottom to top,
+            // we can simplify this to 2 for loops
             let (mut curr_x, mut curr_y) = start;
             let (delta_x, delta_y) = ((*dest_x - curr_x).signum(), (*dest_y - curr_y).signum());
-            // raster
             while curr_x != *dest_x || curr_y != *dest_y {
                 curr_x += delta_x;
                 curr_y += delta_y;
-                add_rock((curr_x, curr_y));
+                cave[curr_y as usize][curr_x as usize] = T::Rock;
             }
             start = (*dest_x, *dest_y);
         })
     });
-
     World {
         cave,
-        left: left as usize,
-        right: right as usize,
         bottom: bottom as usize,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::debug::display;
-
-    use super::*;
-
-    #[test]
-    fn test_parse() {
-        let w = parse_input(INPUT_TEST, true);
-        assert_eq!(w.left, 494);
-        assert_eq!(w.right, 503);
-        assert_eq!(w.bottom, 9);
-        display(&w.cave, w.left - 2);
-    }
-}
-#[allow(dead_code)]
-const INPUT_CUSTOM: &str = "";
 
 #[allow(dead_code)]
 const INPUT_TEST: &str = "\
