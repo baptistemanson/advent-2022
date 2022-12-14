@@ -1,37 +1,5 @@
-use std::cmp::max;
-
-#[allow(unused_imports)]
-use crate::debug::display;
 use itertools::Itertools;
-
-// to reduce space complexity, we could:
-// add a type called SandExtrema(i32), that stands for sand with x neighbours.
-// then we iterate on the vertical sandExtrema on that side until there is a delta of more than 1
-// between 2 consecutives SandExtrema.
-// then we do +1 on the SandExtrema, registering this level is 1 more wider.
-pub fn pb1() {
-    let world = parse_input(INPUT, true);
-    let w = simulate(world, true);
-    let o: usize = count_sand(w);
-    assert_eq!(o, 1078);
-    dbg!(o);
-}
-pub fn pb2() {
-    let world = parse_input(INPUT, false);
-    let w = simulate(world, false);
-    // display(&w.cave, w.left - 50);
-    let o: usize = count_sand(w);
-    assert_eq!(o, 30157);
-    dbg!(o);
-}
-
-fn count_sand(w: World) -> usize {
-    w.cave
-        .iter()
-        .map(|l| l.iter().filter(|t| **t == T::Sand).count())
-        .sum()
-}
-
+type Cave = Vec<Vec<T>>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum T {
     Air,
@@ -39,105 +7,92 @@ enum T {
     Rock,
 }
 
-impl ToString for T {
-    fn to_string(&self) -> String {
-        match self {
-            T::Air => ".",
-            T::Sand => "o",
-            T::Rock => "█",
-        }
-        .to_string()
-    }
+pub fn pb1() {
+    let w = simulate(parse_input(INPUT), true);
+    let o: usize = count_sand(w);
+    assert_eq!(o, 1078);
 }
-struct World {
-    cave: Vec<Vec<T>>,
-    bottom: usize,
+pub fn pb2() {
+    let w = simulate(parse_input(INPUT), false);
+    let o: usize = count_sand(w);
+    assert_eq!(o, 30157);
 }
 
-fn simulate(mut world: World, should_check_bound: bool) -> World {
-    let spawn = (0, 500);
-    let mut sand = spawn;
+fn count_sand(w: Cave) -> usize {
+    w.iter()
+        .map(|l| l.iter().filter(|t| **t == T::Sand).count())
+        .sum()
+}
+
+fn simulate(mut cave: Cave, should_check_bound: bool) -> Cave {
+    let mut sand = (0, 500);
     loop {
-        if world.cave[sand.0 + 1][sand.1] == T::Air {
+        if cave[sand.0 + 1][sand.1] == T::Air {
             sand.0 += 1; // down
-        } else if world.cave[sand.0 + 1][sand.1 - 1] == T::Air {
+        } else if cave[sand.0 + 1][sand.1 - 1] == T::Air {
             sand.0 += 1; // left
             sand.1 -= 1;
-        } else if world.cave[sand.0 + 1][sand.1 + 1] == T::Air {
+        } else if cave[sand.0 + 1][sand.1 + 1] == T::Air {
             sand.0 += 1; // right
             sand.1 += 1;
         } else {
-            world.cave[sand.0][sand.1] = T::Sand; // rest
-            if sand.0 == spawn.0 && sand.1 == spawn.1 {
-                return world; // if we cannot spawn anymore
+            cave[sand.0][sand.1] = T::Sand; // rest
+            if sand.0 == 0 && sand.1 == 500 {
+                return cave; // if we cannot spawn anymore
             }
-            sand = spawn; // spawn
+            sand = (0, 500); // spawn
         }
-        if should_check_bound {
-            if sand.0 == world.bottom {
-                return world;
-            }
-        };
+        if should_check_bound && sand.0 == cave.len() - 2 {
+            return cave;
+        }
     }
 }
 
-fn parse_input(s: &str, should_be_bound: bool) -> World {
-    let lines = s
+fn parse_input(s: &str) -> Cave {
+    let polylines = s
         .lines()
         .map(|l| {
             l.split(" -> ")
                 .map(|s| {
                     let (x, y) = s.split_once(",").unwrap();
-                    let x = x.parse::<i32>().unwrap();
-                    let y = y.parse::<i32>().unwrap();
-                    (x, y)
+                    (x.parse::<i32>().unwrap(), y.parse::<i32>().unwrap())
                 })
-                .collect::<Vec<(i32, i32)>>()
+                .collect_vec()
         })
         .collect_vec();
-    // find boundaries
-    let right = lines
-        .iter()
-        .map(|l| l.iter().map(|p| p.0).max().unwrap())
-        .max()
-        .unwrap(); // we assume there are stuff on the right of the spawn
-    let bottom = lines
+
+    let width = 2 * 500; // spawner is centered
+    let height = polylines
         .iter()
         .map(|l| l.iter().map(|p| p.1).max().unwrap())
         .max()
-        .unwrap();
+        .unwrap() as usize
+        + 2; // 2 empty before the bed rock
 
-    let (h, w) = if should_be_bound {
-        (right + 2, bottom + 3)
-    } else {
-        (500 * 2, bottom + 3)
-    };
-    let mut cave: Vec<Vec<T>> = vec![vec![T::Air; h as usize]; w as usize];
-    let last = cave.last_mut().unwrap();
-    *last = vec![T::Rock; h as usize];
+    let mut cave: Vec<Vec<T>> = vec![vec![T::Air; width]; height];
+    cave.push(vec![T::Rock; width as usize]); // bed rock
 
-    lines.iter().for_each(|points| {
-        let mut points = points.iter();
-        let mut start = *points.next().unwrap();
-        cave[start.1 as usize][start.0 as usize] = T::Rock;
-        points.for_each(|(dest_x, dest_y)| {
-            // raster, if we assume we only get path left to right and bottom to top,
-            // we can simplify this to 2 for loops
-            let (mut curr_x, mut curr_y) = start;
-            let (delta_x, delta_y) = ((*dest_x - curr_x).signum(), (*dest_y - curr_y).signum());
-            while curr_x != *dest_x || curr_y != *dest_y {
-                curr_x += delta_x;
-                curr_y += delta_y;
-                cave[curr_y as usize][curr_x as usize] = T::Rock;
+    let mut put_rock = |x: i32, y: i32| cave[y as usize][x as usize] = T::Rock;
+
+    polylines.iter().for_each(|polyline| {
+        let (mut x, mut y) = polyline[0];
+        put_rock(x, y);
+        polyline.iter().skip(1).for_each(|(xe, ye)| {
+            let (dx, dy) = ((*xe - x).signum(), (*ye - y).signum());
+            while x != *xe || y != *ye {
+                (x, y) = (x + dx, y + dy);
+                put_rock(x, y);
             }
-            start = (*dest_x, *dest_y);
         })
     });
-    World {
-        cave,
-        bottom: bottom as usize,
-    }
+    cave
 }
+
+// to reduce space complexity, we could:
+// add a type called SandExtrema(i32), that stands for sand with x neighbours.
+// then we iterate on the vertical sandExtrema on that side until there is a delta of more than 1
+// between 2 consecutives SandExtrema.
+// then we do +1 on the SandExtrema, registering this level is 1 more wider.
 
 #[allow(dead_code)]
 const INPUT_TEST: &str = "\
