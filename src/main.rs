@@ -1,5 +1,7 @@
 #![feature(iter_array_chunks)]
 #![feature(int_roundings)]
+
+use std::time::Instant;
 mod day1;
 mod day10;
 mod day11;
@@ -19,9 +21,10 @@ mod day8;
 mod day9;
 mod debug;
 mod playground;
-
+use thousands::Separable;
 fn main() {
     let pb = std::env::args().nth(1).expect("expected problem number");
+    let now = Instant::now();
     match pb.as_str() {
         "11" => day1::pb1(),
         "12" => day1::pb2(),
@@ -60,5 +63,9 @@ fn main() {
         "152" => day15::pb2(),
         "playground" => playground::main(),
         _ => panic!("unknown problem"),
-    }
+    };
+    println!(
+        "took {} ms",
+        now.elapsed().as_millis().separate_with_commas()
+    );
 }

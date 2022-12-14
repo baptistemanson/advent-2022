@@ -1,5 +1,7 @@
 use itertools::Itertools;
 type Cave = Vec<Vec<T>>;
+// could switch to column major matrix to speed up mem access to the falling grains.
+// and not oversize the world, just add huge triangles at the end.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum T {
     Air,
