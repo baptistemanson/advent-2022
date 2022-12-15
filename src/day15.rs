@@ -1,6 +1,5 @@
-use std::cmp::max;
-
 use itertools::Itertools;
+use std::cmp::max;
 type Point = (i32, i32);
 
 pub fn pb1() {
@@ -39,20 +38,52 @@ fn merge_intervals(mut arr: Vec<Point>) -> Vec<Point> {
     arr.resize(index + 1, (0, 0));
     arr
 }
-
 pub fn pb2() {
     let points = parse_all(INPUT);
-    let search_area = 4000000;
+    let search_area = 4_000_000;
     let mut res: i64 = 0;
+    let intervals = vec![(0, 0); points.len()];
+    let mut intervals = intervals.into_iter().zip(points).collect_vec();
+    // complexity is search_area * number of sensors
     for y in 0..=search_area {
-        let intervals = blocked(&points, y);
-        if let Some(finishing) = intervals.iter().find(|(s, e)| *s > 0 || *e < search_area) {
-            res = (finishing.1 as i64 + 1) * 4_000_000 + y as i64; // it will overflow if its not i64
+        if let Some(finishing) = get_free_space(&mut intervals, y) {
+            res = (finishing as i64) * 4_000_000 + y as i64; // it will overflow if its not i64
             break;
         }
     }
     assert_eq!(res, 11374534948438);
     dbg!(res);
+}
+
+fn get_free_space(points: &mut Vec<(Point, (Point, i32))>, y: i32) -> Option<i32> {
+    points.iter_mut().for_each(|e| {
+        let (_, (s, dist)) = e;
+        let delta = *dist - (y - s.1).abs();
+        if delta >= 0 {
+            e.0 = (s.0 - delta, s.0 + delta);
+        } else {
+            e.0 = (0, 0);
+        }
+    });
+    // this was the perf killer, but now we do partially sort the array each time.
+    // this results in going from 1.8s down to 0.5s.
+    // unstable sort is faster too.
+    points.sort_unstable_by(|a, b| a.0 .0.cmp(&b.0 .0));
+    let mut max_so_far: i32 = 0;
+    for i in points.iter() {
+        let i = i.0;
+        if i == (0, 0) {
+            continue;
+        }
+        if i.0 > max_so_far {
+            return Some(i.0 - 1);
+        }
+        if i.1 > 4_000_000 {
+            return None;
+        }
+        max_so_far = max(max_so_far, i.1);
+    }
+    None
 }
 
 // Sensor at x=2, y=18: closest beacon is at x=-2, y=15
@@ -62,18 +93,11 @@ fn parse_all(input: &str) -> Vec<(Point, i32)> {
     }
     input
         .lines()
-        .flat_map(|l| {
+        .map(|l| {
             let (s, b) = l.split_once(": closest beacon is at ").unwrap();
-            vec![parse_point(&s["Sensor at ".len()..]), parse_point(&b)]
+            (parse_point(&s["Sensor at ".len()..]), parse_point(&b))
         })
-        .collect_vec()
-        .chunks(2)
-        .map(|a| {
-            if a.len() != 2 {
-                panic!()
-            }
-            (a[0], dist(a[0], a[1]))
-        })
+        .map(|(a, b)| (a, dist(a, b)))
         .collect_vec()
 }
 //x=2, y=18
