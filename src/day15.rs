@@ -68,9 +68,10 @@ fn get_free_space(points: &mut Vec<(Point, (Point, i32))>, y: i32) -> Option<i32
     // this was the perf killer, but now we do partially sort the array each time.
     // this results in going from 1.8s down to 0.5s.
     // unstable sort is faster too.
+    // i could go in the reverse order too.
     points.sort_unstable_by(|a, b| a.0 .0.cmp(&b.0 .0));
     let mut max_so_far: i32 = 0;
-    for i in points.iter() {
+    for i in points {
         let i = i.0;
         if i == (0, 0) {
             continue;
