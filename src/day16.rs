@@ -23,7 +23,7 @@ pub fn pb1() {
 }
 
 pub fn pb2() {
-    let cave = parse(INPUT_TEST);
+    let cave = parse(INPUT);
     let (cave, start) = compress(cave);
     let path: u64 = 0;
     // ignore empty paths
@@ -33,16 +33,23 @@ pub fn pb2() {
 }
 
 fn find_max(cave: &Cave, pos: usize, clock: u8, visited: u64) -> i32 {
+    if clock == 0 {
+        return 0;
+    }
     let valve = &cave[pos];
-    valve.flow_rate * (clock as i32)
-        + valve
-            .connections
-            .iter()
-            .enumerate()
-            .filter(|(i, d)| **d < (clock - 1) && !(is_in(visited, *i)))
-            .map(|(i, d)| find_max(cave, i, clock - *d - 1, add(visited, i)))
-            .max()
-            .unwrap_or(0)
+    let curr = if is_in(visited, pos) {
+        0
+    } else {
+        valve.flow_rate * (clock as i32)
+    };
+    curr + valve
+        .connections
+        .iter()
+        .enumerate()
+        .filter(|(i, d)| **d < (clock - 1) && !(is_in(visited, *i)))
+        .map(|(i, d)| find_max(cave, i, clock - *d - 1, add(visited, pos)))
+        .max()
+        .unwrap_or(0)
 }
 
 fn find_max_elephant(
@@ -60,10 +67,12 @@ fn find_max_elephant(
     let mut maximum = 0;
     for (c1, d1) in valve1.connections.iter().enumerate() {
         if clock1.saturating_sub(*d1) < 1 || is_in(visited, c1) {
+            // no time or already walked.
             continue;
         }
         for (c2, d2) in valve2.connections.iter().enumerate() {
-            if clock2.saturating_sub(*d2) < 1 || is_in(visited, c2) {
+            if c1 == c2 || clock2.saturating_sub(*d2) < 1 || is_in(visited, c2) {
+                // no time or already walked.
                 continue;
             } else {
                 // double path eval
@@ -84,8 +93,8 @@ fn find_max_elephant(
     if maximum == 0 {
         // single path eval
         maximum = max(
-            find_max(cave, pos1, clock1, visited),
-            find_max(cave, pos2, clock2, visited),
+            find_max(cave, pos1, clock1, add(visited, pos1)),
+            find_max(cave, pos2, clock2, add(visited, pos2)),
         );
     }
     pressure + maximum
