@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn display<T: ToString>(t: &Vec<Vec<T>>, offset: usize) {
     println!("");
     println!("");
