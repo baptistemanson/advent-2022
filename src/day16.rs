@@ -1,18 +1,16 @@
 use itertools::Itertools;
 use std::{cmp::max, collections::HashMap};
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct UncompressedValve {
-    flow_rate: i32,
-    connections: Vec<&'static str>,
-}
-type UncompressedCave = HashMap<&'static str, UncompressedValve>;
 
+type Cave = Vec<Valve>;
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct Valve {
     flow_rate: i32,
     connections: Vec<u8>, // index is dest node
 }
-type Cave = Vec<Valve>;
+struct UncompressedValve {
+    flow_rate: i32,
+    connections: Vec<&'static str>,
+}
 
 pub fn pb1() {
     let cave = parse(INPUT);
@@ -37,19 +35,20 @@ fn find_max(cave: &Cave, pos: usize, clock: u8, visited: u64) -> i32 {
         return 0;
     }
     let valve = &cave[pos];
-    let curr = if is_in(visited, pos) {
+    let curr_valve_pressure = if is_in(visited, pos) {
         0
     } else {
         valve.flow_rate * (clock as i32)
     };
-    curr + valve
-        .connections
-        .iter()
-        .enumerate()
-        .filter(|(i, d)| **d < (clock - 1) && !(is_in(visited, *i)))
-        .map(|(i, d)| find_max(cave, i, clock - *d - 1, add(visited, pos)))
-        .max()
-        .unwrap_or(0)
+    curr_valve_pressure
+        + valve
+            .connections
+            .iter()
+            .enumerate()
+            .filter(|(i, d)| **d < (clock - 1) && !(is_in(visited, *i)))
+            .map(|(i, d)| find_max(cave, i, clock - *d - 1, add(visited, pos)))
+            .max()
+            .unwrap_or(0)
 }
 
 fn find_max_elephant(
@@ -67,23 +66,23 @@ fn find_max_elephant(
     let mut maximum = 0;
     for (c1, d1) in valve1.connections.iter().enumerate() {
         if clock1.saturating_sub(*d1) < 1 || is_in(visited, c1) {
-            // no time or already walked.
+            // no time or already opened.
             continue;
         }
         for (c2, d2) in valve2.connections.iter().enumerate() {
             if c1 == c2 || clock2.saturating_sub(*d2) < 1 || is_in(visited, c2) {
-                // no time or already walked.
+                // no time or already opened.
                 continue;
             } else {
-                // double path eval
+                // trying to open 2 valves at "once" will always be better than just 1 person.
                 maximum = max(
                     maximum,
                     find_max_elephant(
                         cave,
                         c1,
                         c2,
-                        clock1 - d1 - 1, // movement and open the van when arrived
-                        clock2 - d2 - 1, // movement and open the van when arrived
+                        clock1 - d1 - 1, // movement time + time to open the valve
+                        clock2 - d2 - 1,
                         add(add(visited, c1), c2),
                     ),
                 );
@@ -100,37 +99,38 @@ fn find_max_elephant(
     pressure + maximum
 }
 
-fn compress(cave: UncompressedCave) -> (Cave, usize) {
+fn compress(cave: HashMap<&'static str, UncompressedValve>) -> (Cave, usize) {
     let mut keys = cave.keys().collect_vec();
     keys.sort();
     let map_id = |s: &str| keys.iter().position(|i| s == **i).unwrap();
-    let mut compressed = vec![
+    let mut out = vec![
         Valve {
             flow_rate: 0,
             connections: vec![0; cave.len()]
         };
         cave.len()
     ];
-    for (id, valve) in cave.iter() {
+    for (long_id, valve) in cave.iter() {
         let mut curr_dist: u8 = 1;
-        // find length to all other valves
-        let short_id = map_id(id);
-        compressed[short_id].flow_rate = valve.flow_rate;
-        compressed[short_id].connections[short_id] = 255; // remove loops
-        let mut to_scan = vec![*id];
+        let id = map_id(long_id);
+        out[id].flow_rate = valve.flow_rate;
+        out[id].connections[id] = u8::MAX; //we go back from self to self, so put it very far
+        let mut to_scan = vec![*long_id];
         let mut next = vec![];
         loop {
+            // compute distance in time to go to any valve from this valve.
+            // could use Floyd Marshall for this, but I had Dijkstra ready.
             for src in to_scan.drain(..) {
                 let conns = &cave.get(src).unwrap().connections;
-                for conn_id in conns {
-                    let short_conn_id = map_id(conn_id);
-                    if compressed[short_id].connections[short_conn_id] == 0 {
-                        next.push(*conn_id);
-                        // do not store dest with flow rate = 0
-                        if cave[conn_id].flow_rate != 0 {
-                            compressed[short_id].connections[short_conn_id] = curr_dist;
+                for long_conn_id in conns {
+                    let conn_id = map_id(long_conn_id);
+                    if out[id].connections[conn_id] == 0 {
+                        next.push(*long_conn_id);
+                        // don't go to valves with no flow,  so put it very far
+                        if cave[long_conn_id].flow_rate != 0 {
+                            out[id].connections[conn_id] = curr_dist;
                         } else {
-                            compressed[short_id].connections[short_conn_id] = 255;
+                            out[id].connections[conn_id] = u8::MAX;
                         }
                     }
                 }
@@ -138,16 +138,16 @@ fn compress(cave: UncompressedCave) -> (Cave, usize) {
             curr_dist += 1;
             std::mem::swap(&mut to_scan, &mut next); // reduce allocations
             if to_scan.len() == 0 || curr_dist >= 30 {
+                // we only go up to 30
                 break;
             }
         }
     }
-    // compress the 0 flow rate rooms by nulling them.
-    (compressed, map_id("AA"))
+    (out, map_id("AA"))
 }
 //Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
 //Valve AA has flow rate=0; tunnel lead to valve DD
-fn parse(input: &'static str) -> UncompressedCave {
+fn parse(input: &'static str) -> HashMap<&'static str, UncompressedValve> {
     input
         .lines()
         .map(|l| {
