@@ -81,9 +81,11 @@ fn find_max_elephant(
             if c1 == c2
                 || clock2.saturating_sub(*d2) < 2 // not enough time
                 || is_in(visited, c2) // already seen
-                || *d1 as u32 + *d2 as u32 // 
-                    > valve1.connections[c2] as u32 + valve2.connections[c1] as u32
-            // dont evaluate if its faster just to do the equivalent opposite
+                || *d1 as u32 + *d2 as u32 
+                    > valve1.connections[c2] as u32 + valve2.connections[c1] as u32 // faster to swap positions
+                || *d1 as u32 + *d2 as u32
+                    == valve1.connections[c2] as u32 + valve2.connections[c1] as u32 && c2 > c1
+            // when equivalent, only evaluate a pair c1, c2 once.
             {
                 continue;
             } else {
