@@ -27,19 +27,21 @@ pub fn pb2() {
     // ignore empty paths
     let time = 26;
     let o = find_max_elephant(&cave, start, start, time, time, path);
+    assert_eq!(o, 2191);
     dbg!(o);
 }
 
 fn find_max(cave: &Cave, pos: usize, clock: u8, visited: u64) -> i32 {
-    if clock == 0 {
-        return 0;
-    }
     let valve = &cave[pos];
+    if clock <= 2 {
+        return valve.flow_rate * (clock as i32);
+    }
     let curr_valve_pressure = if is_in(visited, pos) {
         0
     } else {
         valve.flow_rate * (clock as i32)
     };
+
     curr_valve_pressure
         + valve
             .connections
@@ -64,14 +66,25 @@ fn find_max_elephant(
     let valve2 = &cave[pos2];
     let pressure = valve1.flow_rate * (clock1 as i32) + valve2.flow_rate * (clock2 as i32);
     let mut maximum = 0;
+    if clock1 <= 2 {
+        return pressure + find_max(cave, pos2, clock2, add(visited, pos2));
+    }
+    if clock2 <= 2 {
+        return pressure + find_max(cave, pos1, clock1, add(visited, pos1));
+    }
     for (c1, d1) in valve1.connections.iter().enumerate() {
-        if clock1.saturating_sub(*d1) < 1 || is_in(visited, c1) {
+        if clock1.saturating_sub(*d1) < 2 || is_in(visited, c1) {
             // no time or already opened.
             continue;
         }
         for (c2, d2) in valve2.connections.iter().enumerate() {
-            if c1 == c2 || clock2.saturating_sub(*d2) < 1 || is_in(visited, c2) {
-                // no time or already opened.
+            if c1 == c2
+                || clock2.saturating_sub(*d2) < 2 // not enough time
+                || is_in(visited, c2) // already seen
+                || *d1 as u32 + *d2 as u32 // 
+                    > valve1.connections[c2] as u32 + valve2.connections[c1] as u32
+            // dont evaluate if its faster just to do the equivalent opposite
+            {
                 continue;
             } else {
                 // trying to open 2 valves at "once" will always be better than just 1 person.
@@ -88,13 +101,6 @@ fn find_max_elephant(
                 );
             }
         }
-    }
-    if maximum == 0 {
-        // single path eval
-        maximum = max(
-            find_max(cave, pos1, clock1, add(visited, pos1)),
-            find_max(cave, pos2, clock2, add(visited, pos2)),
-        );
     }
     pressure + maximum
 }
