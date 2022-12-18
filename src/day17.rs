@@ -1,9 +1,10 @@
 pub fn pb1() {
     let input = INPUT.as_bytes();
-    let nb_target = 2023;
+    let nb_target = 1000000000001;
 
-    let mut cave = [0 as u8; 5_000];
+    let mut cave = [0 as u8; 200_000];
     let mut highest: usize = 0;
+    let mut virtual_highest: usize = 0;
 
     let mut falling = [0 as u8; 4];
     let mut vertical_pos: usize = 3;
@@ -22,6 +23,10 @@ pub fn pb1() {
 
     spawn(&mut vertical_pos, &mut nb_rocks, &mut falling, highest);
     vertical_pos = 3;
+
+    let mut first_alignment = None;
+    let mut first_alignment_rock = 0;
+
     while nb_rocks < nb_target {
         // jet patterns
         let (wall, to_the_left) = match input[tick % input.len()] as char {
@@ -46,13 +51,36 @@ pub fn pb1() {
             rest_falling(&falling, &mut cave, vertical_pos);
             highest = find_new_highest(highest, &cave);
             spawn(&mut vertical_pos, &mut nb_rocks, &mut falling, highest);
+            // cycle detection, we skip the first 10k
+            if tick % input.len() == 0 && nb_rocks > 10_000 && virtual_highest == 0 {
+                if first_alignment == None {
+                    first_alignment = Some(highest);
+                    first_alignment_rock = nb_rocks;
+                } else {
+                    let first_alignment = first_alignment.unwrap();
+                    let s = &cave[first_alignment..highest - 15]; // 15 to take some margin for the other pieces to come.
+                    let f = &cave[(2 * first_alignment - highest)..first_alignment - 15];
+                    if *f == *s {
+                        let cycle_rock = nb_rocks - first_alignment_rock;
+                        let cycle_height = highest - first_alignment;
+                        let rock_left = nb_target - nb_rocks;
+                        let nb_cycles = rock_left / cycle_rock;
+                        virtual_highest = nb_cycles * cycle_height;
+                        nb_rocks = nb_rocks + cycle_rock * nb_cycles;
+                    }
+                }
+            };
+            if nb_rocks == 2023 {
+                // assert_eq!(highest + 1, 3193);
+                println!(" part 1 {}", highest + 1);
+            }
         } else {
             vertical_pos -= 1;
         }
         tick += 1;
     }
-    println!("result {}", highest + 1);
-    assert_eq!(highest + 1, 3193);
+    let total = virtual_highest + highest + 1;
+    println!("part 2 {}", total);
 }
 
 fn does_not_hit_wall(falling: &[u8; 4], pos: u8) -> bool {
@@ -93,15 +121,7 @@ fn display_falling(falling: &[u8]) {
     display(falling, 0, 3);
 }
 
-pub fn pb2() {
-    // goal will be to detect cycles
-    let input = INPUT_TEST.as_bytes();
-    let nb_target: u64 = 1_000_000_000_000;
-    let mut highest: usize = 0;
-
-    println!("result {}", highest + 1);
-    assert_eq!(highest + 1, 1514285714288);
-}
+pub fn pb2() {}
 
 #[cfg(test)]
 mod tests {
