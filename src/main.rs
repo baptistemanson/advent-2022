@@ -10,6 +10,7 @@ mod day13;
 mod day14;
 mod day15;
 mod day16;
+mod day17;
 mod day2;
 mod day3;
 mod day3bis;
@@ -25,6 +26,17 @@ mod playground;
 use thousands::Separable;
 fn main() {
     let pb = std::env::args().nth(1).expect("expected problem number");
+    std::thread::Builder::new()
+        .stack_size(50 * 1024 * 1024)
+        .spawn(|| {
+            execute(pb);
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn execute(pb: String) {
     let now = Instant::now();
     match pb.as_str() {
         "11" => day1::pb1(),
@@ -64,6 +76,8 @@ fn main() {
         "152" => day15::pb2(),
         "161" => day16::pb1(),
         "162" => day16::pb2(),
+        "171" => day17::pb1(),
+        "172" => day17::pb2(),
         "playground" => playground::main(),
         _ => panic!("unknown problem"),
     };
