@@ -31,6 +31,7 @@ pub fn pb2() {
     dbg!(o);
 }
 
+// to go faster we can propagate down the best, score so far, and cull early all paths that dont match
 fn find_max(cave: &Cave, pos: usize, clock: u8, visited: u64) -> i32 {
     let valve = &cave[pos];
     if clock <= 2 {
