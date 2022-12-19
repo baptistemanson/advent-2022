@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 
 use itertools::Itertools;
 
@@ -53,8 +53,8 @@ pub fn pb2() {
 
 fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
     let mut scanned: HashSet<State> = HashSet::with_capacity(50 * 1024 * 1024);
-    let mut to_scan = VecDeque::with_capacity(50 * 1024 * 1024);
-    to_scan.push_back(start_state);
+    let mut to_scan = Vec::with_capacity(50 * 1024 * 1024);
+    to_scan.push(start_state);
 
     // we use the current best state in terms of geodes
     // to discover if the evaluated state that will always be worse than the current best
@@ -76,7 +76,7 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
     let max_obsidian = blueprint.geode_cost_in_obsidian;
     let max_clay = blueprint.obs_cost_in_clay;
 
-    while let Some(state) = to_scan.pop_front() {
+    while let Some(state) = to_scan.pop() {
         let geode_expected = state.geode + state.time_left * state.geode_robot;
         if state.time_left == 1 {
             if best_geode < geode_expected {
@@ -100,6 +100,7 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             best_state = state;
         }
 
+        to_scan.push(dig(state));
         // geode robot
         if state.ore >= blueprint.geode_cost_in_ore && state.obs >= blueprint.geode_cost_in_obsidian
         {
@@ -107,7 +108,8 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             new_state.geode_robot += 1;
             new_state.obs -= blueprint.geode_cost_in_obsidian;
             new_state.ore -= blueprint.geode_cost_in_ore;
-            to_scan.push_back(new_state);
+            to_scan.push(new_state);
+            continue; // seems to always be better to build a geode robot when we
         }
         // obsidian robot
         if state.ore >= blueprint.obs_cost_in_ore
@@ -118,7 +120,7 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             new_state.obs_robot += 1;
             new_state.clay -= blueprint.obs_cost_in_clay;
             new_state.ore -= blueprint.obs_cost_in_ore;
-            to_scan.push_back(new_state);
+            to_scan.push(new_state);
         }
         // clay robot payoffs in >3turns
         if state.ore >= blueprint.clay_cost_in_ore
@@ -128,7 +130,7 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             let mut new_state = dig(state);
             new_state.clay_robot += 1;
             new_state.ore -= blueprint.clay_cost_in_ore;
-            to_scan.push_back(new_state);
+            to_scan.push(new_state);
         }
         // ore robot
         if state.ore >= blueprint.ore_cost_in_ore
@@ -137,9 +139,8 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             let mut new_state = dig(state);
             new_state.ore_robot += 1;
             new_state.ore -= blueprint.ore_cost_in_ore;
-            to_scan.push_back(new_state);
+            to_scan.push(new_state);
         }
-        to_scan.push_back(dig(state));
     }
     best_geode
 }
@@ -151,7 +152,8 @@ fn dont_need_more(time_left: i32, stock: i32, robots: i32, max: i32) -> bool {
 // worse if it has the same or less robots for the same or less stock
 // or if even if building one geode robot per turn til the end, it cannot catch up
 fn worse(max: State, other: State) -> bool {
-    (max.geode_robot >= other.geode_robot
+    (max.time_left == other.time_left
+        && max.geode_robot >= other.geode_robot
         && max.obs_robot >= other.obs_robot
         && max.clay_robot >= other.clay_robot
         && max.ore_robot >= other.ore_robot
