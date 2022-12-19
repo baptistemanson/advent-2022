@@ -49,17 +49,17 @@ pub fn pb2() {
         })
         .product();
     dbg!(s);
-    //assert_eq!(s, 56 * 62);
+    assert_eq!(s, 18816);
 }
 
 fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
     let mut to_scan = VecDeque::with_capacity(50 * 1024 * 1024);
     to_scan.push_back(start_state);
     let mut max_so_far = 0;
-    let mut max_state = start_state;
+    let mut max_state = State::default();
     let mut seen_states: HashSet<State> = HashSet::with_capacity(50 * 1024 * 1024);
 
-    let max_ore_consumption = *[
+    let max_ore_con = *[
         blueprint.clay_cost_in_ore,
         blueprint.ore_cost_in_ore,
         blueprint.obsidian_cost_in_ore,
@@ -68,6 +68,8 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
     .iter()
     .max()
     .unwrap();
+    let max_obsidian_con = blueprint.geode_cost_in_obsidian;
+    let max_clay_con = blueprint.obsidian_cost_in_clay;
 
     while let Some(state) = to_scan.pop_front() {
         if state.time_left == 1 {
@@ -79,13 +81,14 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             continue;
         }
 
-        if seen_states.contains(&state) {
+        if worse(max_state, state) {
             continue;
         }
 
-        if max_state != state && worse(max_state, state) {
-            continue;
+        if seen_states.contains(&state) {
+            continue; // already in the queue, or processed.
         }
+
         seen_states.insert(state);
         if max_so_far < state.geode {
             max_so_far = state.geode;
@@ -109,9 +112,12 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             && state.clay >= blueprint.obsidian_cost_in_clay
         {
             how_many_buildable += 1;
-            if state.obsidian_robot < blueprint.geode_cost_in_obsidian
-                && state.obsidian < blueprint.geode_cost_in_obsidian * state.time_left
-            {
+            if !dont_need_more(
+                state.time_left,
+                state.obsidian,
+                state.obsidian_robot,
+                max_obsidian_con,
+            ) {
                 let mut new_state = state;
                 work(&mut new_state);
                 new_state.clay -= blueprint.obsidian_cost_in_clay;
@@ -121,12 +127,11 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
             }
         }
         // clay robot
-        if state.ore >= blueprint.clay_cost_in_ore
-            && state.clay_robot < blueprint.obsidian_cost_in_clay
-        {
+        if state.ore >= blueprint.clay_cost_in_ore {
             how_many_buildable += 1;
             // clay takes at least 2 turns to pay off.
-            if state.clay < blueprint.obsidian_cost_in_clay * state.time_left && state.time_left > 2
+            if !dont_need_more(state.time_left, state.clay, state.clay_robot, max_clay_con)
+                && state.time_left > 3
             {
                 let mut new_state = state;
                 work(&mut new_state);
@@ -138,7 +143,7 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
         // ore robot
         if state.ore >= blueprint.ore_cost_in_ore {
             how_many_buildable += 1;
-            if max_ore_consumption > state.ore_robot {
+            if !dont_need_more(state.time_left, state.ore, state.ore_robot, max_ore_con) {
                 let mut new_state = state;
                 work(&mut new_state);
                 new_state.ore -= blueprint.ore_cost_in_ore;
@@ -154,6 +159,10 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
         }
     }
     max_so_far
+}
+
+fn dont_need_more(time_left: i32, stock: i32, robots: i32, max_con: i32) -> bool {
+    robots >= max_con || time_left * robots + stock > time_left * max_con
 }
 
 fn worse(max: State, other: State) -> bool {
@@ -178,7 +187,7 @@ fn work(state: &mut State) {
     state.geode += state.geode_robot;
     state.time_left -= 1;
 }
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 struct State {
     time_left: i32,
     ore: i32,

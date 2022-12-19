@@ -29,15 +29,15 @@ use thousands::Separable;
 fn main() {
     let pb = std::env::args().nth(1).expect("expected problem number");
 
-    //execute(pb);
-    std::thread::Builder::new()
-        .stack_size(500 * 1024 * 1024)
-        .spawn(|| {
-            execute(pb);
-        })
-        .unwrap()
-        .join()
-        .unwrap();
+    execute(pb);
+    // std::thread::Builder::new()
+    //     .stack_size(500 * 1024 * 1024)
+    //     .spawn(|| {
+    //         execute(pb);
+    //     })
+    //     .unwrap()
+    //     .join()
+    //     .unwrap();
 }
 
 fn execute(pb: String) {
