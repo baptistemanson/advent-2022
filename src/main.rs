@@ -27,14 +27,16 @@ mod playground;
 use thousands::Separable;
 fn main() {
     let pb = std::env::args().nth(1).expect("expected problem number");
-    std::thread::Builder::new()
-        .stack_size(50 * 1024 * 1024)
-        .spawn(|| {
-            execute(pb);
-        })
-        .unwrap()
-        .join()
-        .unwrap();
+
+    execute(pb);
+    // std::thread::Builder::new()
+    //     .stack_size(50 * 1024 * 1024)
+    //     .spawn(|| {
+    //         execute(pb);
+    //     })
+    //     .unwrap()
+    //     .join()
+    //     .unwrap();
 }
 
 fn execute(pb: String) {

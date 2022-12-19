@@ -37,12 +37,14 @@ pub fn pb1() {
     assert_eq!(total, 4302);
     dbg!(total);
 }
+// 4ms
 pub fn pb2() {
     let space = parse(INPUT);
     let start: PosA = (0, 0, 0);
     let mut total = 0;
     let mut queue: Vec<PosA> = Vec::from([start]);
-    let mut scanned = HashSet::new();
+    let mut scanned = HashSet::with_capacity(SIZE * SIZE * SIZE);
+    scanned.insert(hash(&start));
     while let Some(air) = queue.pop() {
         let (x, y, z) = air;
         for dir in DIRECTIONS {
@@ -50,8 +52,8 @@ pub fn pb2() {
                 // add does the out of bound check
                 if space[p.0][p.1][p.2] {
                     total += 1;
-                } else if !scanned.contains(&p) {
-                    scanned.insert(p.clone());
+                } else if !scanned.contains(&hash(&p)) {
+                    scanned.insert(hash(&p)); // this is where most of the time is spent
                     queue.push(p);
                 }
             }
@@ -61,6 +63,9 @@ pub fn pb2() {
     dbg!(total);
 }
 
+fn hash(p: &PosA) -> i64 {
+    (p.0 + p.1 * SIZE + p.2 * SIZE * SIZE) as i64
+}
 fn add(a: PosA, b: PosI) -> Option<PosA> {
     let oi = (
         (a.0 as isize + b.0),
@@ -91,7 +96,7 @@ fn parse(input: &str) -> Space {
             .split(",")
             .map(|c| c.parse::<usize>().unwrap())
             .collect::<Vec<usize>>();
-        output[r[0] + 2][r[1] + 2][r[2] + 2] = true; // shift to avoid out of bounds
+        output[r[0] + 2][r[1] + 2][r[2] + 2] = true; // shift to avoid out of bounds, and add a small gap all around the structure
     });
     output
 }
