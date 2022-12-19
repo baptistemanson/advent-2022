@@ -1,5 +1,3 @@
-use tinyset::Set64;
-
 const SIZE: usize = 25;
 type Space = [[[bool; SIZE]; SIZE]; SIZE];
 type PosI = (isize, isize, isize);
