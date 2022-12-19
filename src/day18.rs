@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use tinyset::Set64;
 
 const SIZE: usize = 25;
 type Space = [[[bool; SIZE]; SIZE]; SIZE];
@@ -37,23 +37,21 @@ pub fn pb1() {
     assert_eq!(total, 4302);
     dbg!(total);
 }
-// 4ms
+// 1ms, vec manual is faster than hashset (6ms)
 pub fn pb2() {
     let space = parse(INPUT);
     let start: PosA = (0, 0, 0);
     let mut total = 0;
     let mut queue: Vec<PosA> = Vec::from([start]);
-    let mut scanned = HashSet::with_capacity(SIZE * SIZE * SIZE);
-    scanned.insert(hash(&start));
+    let mut scanned = [false; SIZE * SIZE * SIZE];
+    scanned[hash(&start)] = true;
     while let Some(air) = queue.pop() {
-        let (x, y, z) = air;
         for dir in DIRECTIONS {
-            if let Some(p) = add((x, y, z), dir) {
-                // add does the out of bound check
+            if let Some(p) = add(air, dir) {
                 if space[p.0][p.1][p.2] {
                     total += 1;
-                } else if !scanned.contains(&hash(&p)) {
-                    scanned.insert(hash(&p)); // this is where most of the time is spent
+                } else if !scanned[hash(&p)] {
+                    scanned[hash(&p)] = true;
                     queue.push(p);
                 }
             }
@@ -63,8 +61,8 @@ pub fn pb2() {
     dbg!(total);
 }
 
-fn hash(p: &PosA) -> i64 {
-    (p.0 + p.1 * SIZE + p.2 * SIZE * SIZE) as i64
+fn hash(p: &PosA) -> usize {
+    (p.0 + p.1 * SIZE + p.2 * SIZE * SIZE) as usize
 }
 fn add(a: PosA, b: PosI) -> Option<PosA> {
     let oi = (
