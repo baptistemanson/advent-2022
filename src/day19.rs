@@ -53,13 +53,14 @@ pub fn pb2() {
 }
 
 fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
+    let mut scanned: HashSet<State> = HashSet::with_capacity(50 * 1024 * 1024);
     let mut to_scan = VecDeque::with_capacity(50 * 1024 * 1024);
     to_scan.push_back(start_state);
-    let mut max_so_far = 0;
-    let mut max_state = State::default();
-    let mut seen_states: HashSet<State> = HashSet::with_capacity(50 * 1024 * 1024);
 
-    let max_ore_con = *[
+    let mut best_geode = 0;
+    let mut best_state = State::default();
+
+    let max_ore = *[
         blueprint.clay_cost_in_ore,
         blueprint.ore_cost_in_ore,
         blueprint.obsidian_cost_in_ore,
@@ -68,40 +69,39 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
     .iter()
     .max()
     .unwrap();
-    let max_obsidian_con = blueprint.geode_cost_in_obsidian;
-    let max_clay_con = blueprint.obsidian_cost_in_clay;
+    let max_obsidian = blueprint.geode_cost_in_obsidian;
+    let max_clay = blueprint.obsidian_cost_in_clay;
 
     while let Some(state) = to_scan.pop_front() {
+        let geode_expected = state.geode + state.time_left * state.geode_robot;
         if state.time_left == 1 {
-            let to_comp = state.geode + state.geode_robot;
-            if max_so_far < to_comp {
-                max_so_far = to_comp;
-                max_state = state;
+            if best_geode < geode_expected {
+                best_geode = geode_expected;
+                best_state = state;
             }
-            continue;
+            continue; // end of investigation
         }
 
-        if worse(max_state, state) {
-            continue;
+        if worse(best_state, state) {
+            continue; // will always be worse than the leader
         }
 
-        if seen_states.contains(&state) {
-            continue; // already in the queue, or processed.
+        if scanned.contains(&state) {
+            continue; // already processed.
+        }
+        scanned.insert(state);
+
+        if best_geode < geode_expected {
+            best_geode = geode_expected;
+            best_state = state;
         }
 
-        seen_states.insert(state);
-        if max_so_far < state.geode {
-            max_so_far = state.geode;
-            max_state = state;
-        }
-        let mut how_many_buildable = 0;
         // geode robot
         if state.ore >= blueprint.geode_cost_in_ore
             && state.obsidian >= blueprint.geode_cost_in_obsidian
         {
-            how_many_buildable += 1;
             let mut new_state = state;
-            work(&mut new_state);
+            dig(&mut new_state);
             new_state.obsidian -= blueprint.geode_cost_in_obsidian;
             new_state.ore -= blueprint.geode_cost_in_ore;
             new_state.geode_robot += 1;
@@ -110,59 +110,52 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
         // obsidian robot
         if state.ore >= blueprint.obsidian_cost_in_ore
             && state.clay >= blueprint.obsidian_cost_in_clay
-        {
-            how_many_buildable += 1;
-            if !dont_need_more(
+            && !dont_need_more(
                 state.time_left,
                 state.obsidian,
                 state.obsidian_robot,
-                max_obsidian_con,
-            ) {
-                let mut new_state = state;
-                work(&mut new_state);
-                new_state.clay -= blueprint.obsidian_cost_in_clay;
-                new_state.ore -= blueprint.obsidian_cost_in_ore;
-                new_state.obsidian_robot += 1;
-                to_scan.push_back(new_state);
-            }
-        }
-        // clay robot
-        if state.ore >= blueprint.clay_cost_in_ore {
-            how_many_buildable += 1;
-            // clay takes at least 2 turns to pay off.
-            if !dont_need_more(state.time_left, state.clay, state.clay_robot, max_clay_con)
-                && state.time_left > 3
-            {
-                let mut new_state = state;
-                work(&mut new_state);
-                new_state.ore -= blueprint.clay_cost_in_ore;
-                new_state.clay_robot += 1;
-                to_scan.push_back(new_state);
-            }
-        }
-        // ore robot
-        if state.ore >= blueprint.ore_cost_in_ore {
-            how_many_buildable += 1;
-            if !dont_need_more(state.time_left, state.ore, state.ore_robot, max_ore_con) {
-                let mut new_state = state;
-                work(&mut new_state);
-                new_state.ore -= blueprint.ore_cost_in_ore;
-                new_state.ore_robot += 1;
-                to_scan.push_back(new_state);
-            }
-        }
-        // if can build robot, should build robot
-        if how_many_buildable != 4 {
+                max_obsidian,
+            )
+        {
             let mut new_state = state;
-            work(&mut new_state);
+            dig(&mut new_state);
+            new_state.clay -= blueprint.obsidian_cost_in_clay;
+            new_state.ore -= blueprint.obsidian_cost_in_ore;
+            new_state.obsidian_robot += 1;
             to_scan.push_back(new_state);
         }
+        // clay robot
+        if state.ore >= blueprint.clay_cost_in_ore
+            && !dont_need_more(state.time_left, state.clay, state.clay_robot, max_clay)
+            && state.time_left > 3
+        {
+            let mut new_state = state;
+            dig(&mut new_state);
+            new_state.ore -= blueprint.clay_cost_in_ore;
+            new_state.clay_robot += 1;
+            to_scan.push_back(new_state);
+        }
+        // ore robot
+        if state.ore >= blueprint.ore_cost_in_ore
+            && !dont_need_more(state.time_left, state.ore, state.ore_robot, max_ore)
+        {
+            let mut new_state = state;
+            dig(&mut new_state);
+            new_state.ore -= blueprint.ore_cost_in_ore;
+            new_state.ore_robot += 1;
+            to_scan.push_back(new_state);
+        }
+        // if can build robot, should build robot
+
+        let mut new_state = state;
+        dig(&mut new_state);
+        to_scan.push_back(new_state);
     }
-    max_so_far
+    best_geode
 }
 
-fn dont_need_more(time_left: i32, stock: i32, robots: i32, max_con: i32) -> bool {
-    robots >= max_con || time_left * robots + stock > time_left * max_con
+fn dont_need_more(time_left: i32, stock: i32, robots: i32, max: i32) -> bool {
+    robots >= max || time_left * robots + stock > time_left * max
 }
 
 fn worse(max: State, other: State) -> bool {
@@ -180,13 +173,14 @@ fn worse(max: State, other: State) -> bool {
             <= max.geode + max.geode_robot * max.time_left
 }
 
-fn work(state: &mut State) {
+fn dig(state: &mut State) {
     state.ore += state.ore_robot;
     state.clay += state.clay_robot;
     state.obsidian += state.obsidian_robot;
     state.geode += state.geode_robot;
     state.time_left -= 1;
 }
+
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 struct State {
     time_left: i32,
@@ -227,9 +221,6 @@ fn parse(input: &str) -> Vec<Blueprint> {
         })
         .collect_vec()
 }
-
-#[allow(dead_code)]
-const INPUT_CUSTOM: &str = "";
 
 #[allow(dead_code)]
 const INPUT_TEST: &str = "\
