@@ -2,7 +2,7 @@ pub fn pb1() {
     let input = INPUT.as_bytes();
     let nb_target = 1000000000001;
 
-    let mut cave = [0 as u8; 200_000];
+    let mut cave = [0 as u8; 50_000];
     let mut highest: usize = 0;
     let mut virtual_highest: usize = 0;
 
