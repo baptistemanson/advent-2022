@@ -14,6 +14,7 @@ mod day17;
 mod day18;
 mod day19;
 mod day2;
+mod day20;
 mod day3;
 mod day3bis;
 mod day4;
@@ -86,6 +87,8 @@ fn execute(pb: String) {
         "182" => day18::pb2(),
         "191" => day19::pb1(),
         "192" => day19::pb2(),
+        "201" => day20::pb1(),
+        "202" => day20::pb2(),
         "playground" => playground::main(),
         _ => panic!("unknown problem"),
     };
