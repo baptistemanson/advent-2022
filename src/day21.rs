@@ -8,14 +8,15 @@ pub fn pb1() {
 
 pub fn pb2() {
     if let Exp::Add(a, b) = parse(INPUT) {
-        let eq = Exp::Sub(a, b);
-        let mut left = 3967;
-        let mut right = 3916491093821;
+        let eq = Exp::Sub(a, b); // to turn it into a root searching problem
+        let mut left = 3967; // known as positive per part 1
+        let mut right = 3916491093821; // negative value of f
         let mut fleft = solve(&eq, left);
         let fright = solve(&eq, right);
         // bissect
         assert!(fleft.signum() != fright.signum());
-        for _ in 0..60 {
+        for _ in 0..128 {
+            // we gain 1 bit of precision per iteration
             let middle = left + (right - left) / 2;
             let fmiddle = solve(&eq, middle);
             if fmiddle == 0 {
