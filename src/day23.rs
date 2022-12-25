@@ -57,8 +57,6 @@ fn iterate(field: &mut Field, round: usize) {
         if !has_moved {
             println!("ended at {}", i + 1);
             return;
-        } else {
-            // display(&field, 0);
         }
     }
 }
@@ -192,16 +190,6 @@ impl ToString for T {
         }
     }
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_1() {}
-}
-
-#[allow(dead_code)]
-const INPUT_CUSTOM: &str = "";
 
 #[allow(dead_code)]
 const INPUT_TEST: &str = "\
