@@ -1,7 +1,8 @@
 //use crate::debug::display;
 type Field = Vec<Vec<T>>;
 type Clock = usize;
-
+// to go faster, I could use a hashset of positions.
+// it would also make the bounding box logic easier.
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 enum T {
     Empty,
@@ -154,16 +155,6 @@ fn parse(input: &str) -> Field {
     });
     output
 }
-
-// impl ToString for T {
-//     fn to_string(&self) -> String {
-//         match self {
-//             T::Elf(_, _) => String::from("#"),
-//             T::Blocked(_) => String::from("b"),
-//             _ => String::from("."),
-//         }
-//     }
-// }
 
 #[allow(dead_code)]
 const INPUT_TEST: &str = "\
