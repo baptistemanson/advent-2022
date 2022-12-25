@@ -1,119 +1,110 @@
 //use crate::debug::display;
+type Field = Vec<Vec<T>>;
+type Clock = usize;
+
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+enum T {
+    Empty,
+    Elf(usize, usize),
+    Blocked(Clock),
+}
 
 pub fn pb1() {
     let mut field = parse(&INPUT);
-    iterate(&mut field, 22);
-    let r = count_empty(&field);
-    dbg!(r);
+    dance(&mut field, 10);
+    assert_eq!(count_empty(&field), 3917);
 }
 
 pub fn pb2() {
     let mut field = parse(&INPUT);
-    iterate(&mut field, 1000);
-    count_empty(&field);
+    assert_eq!(dance(&mut field, 1_000), 988);
 }
 
-fn iterate(field: &mut Field, round: usize) {
-    let mut output = field.clone();
+fn dance(field: &mut Field, round: usize) -> usize {
+    let mut next = field.clone();
     for i in 0..round {
         let mut has_moved = false;
         for (x, l) in field.iter().enumerate() {
             for (y, t) in l.iter().enumerate() {
-                match t {
-                    T::Elf(_, _) => {
-                        // find destination
-                        let r = find_destination(x, y, &field, i);
-                        if r.is_none() {
-                            output[x][y] = t.clone();
-                            continue;
+                if let T::Elf(_, _) = t {
+                    let suggestion = suggests(x, y, &field, i);
+                    if suggestion.is_none() {
+                        next[x][y] = *t;
+                        continue;
+                    }
+                    let (dest_x, dest_y) = suggestion.unwrap();
+                    match next[dest_x][dest_y] {
+                        T::Blocked(a) if a == i => { /*noop, this cell is already constested */ }
+                        T::Blocked(_) => {
+                            next[dest_x][dest_y] = T::Elf(x, y);
+                            next[x][y] = T::Empty;
                         }
-                        let (dest_x, dest_y) = r.unwrap();
-
-                        // if elf => block this turn
-                        match output[dest_x][dest_y] {
-                            T::Blocked(a) if a == i => { /*noop*/ }
-                            T::Blocked(_) => {
-                                output[dest_x][dest_y] = T::Elf(x, y);
-                                output[x][y] = T::Empty;
-                            }
-                            T::Empty => {
-                                has_moved = true; // it will be T::Blocked(_) if it was already a candidate on the prev turn.
-                                output[dest_x][dest_y] = T::Elf(x, y);
-                                output[x][y] = T::Empty;
-                            }
-                            T::Elf(e_x, e_y) => {
-                                // mark as blocked
-                                output[dest_x][dest_y] = T::Blocked(i);
-                                output[e_x][e_y] = T::Elf(e_x, e_y);
-                            }
+                        T::Empty => {
+                            // why is it sufficient to track this to mark the end?
+                            // if this cell was already constested last round,
+                            // we would hit the previous match arm
+                            has_moved = true;
+                            next[dest_x][dest_y] = T::Elf(x, y);
+                            next[x][y] = T::Empty;
+                        }
+                        T::Elf(e_x, e_y) => {
+                            next[dest_x][dest_y] = T::Blocked(i);
+                            next[e_x][e_y] = T::Elf(e_x, e_y);
                         }
                     }
-                    _ => {}
                 }
             }
         }
-        std::mem::swap(field, &mut output);
-        output = field.clone();
+        field.clone_from_slice(&next);
         if !has_moved {
-            println!("ended at {}", i + 1);
-            return;
+            return i + 1;
         }
     }
+    round + 1
 }
 
-fn find_destination(x: usize, y: usize, field: &Field, i: usize) -> Option<(usize, usize)> {
-    let n = isnt_elf(x - 1, y, field, i);
-    let nw = isnt_elf(x - 1, y - 1, field, i);
-    let ne = isnt_elf(x - 1, y + 1, field, i);
-    let w = isnt_elf(x, y - 1, field, i);
-    let e = isnt_elf(x, y + 1, field, i);
-    let s = isnt_elf(x + 1, y, field, i);
-    let sw = isnt_elf(x + 1, y - 1, field, i);
-    let se = isnt_elf(x + 1, y + 1, field, i);
+fn suggests(x: usize, y: usize, field: &Field, i: usize) -> Option<(usize, usize)> {
+    let n = isnt_elf_or_blocked(x - 1, y, field, i);
+    let nw = isnt_elf_or_blocked(x - 1, y - 1, field, i);
+    let ne = isnt_elf_or_blocked(x - 1, y + 1, field, i);
+    let w = isnt_elf_or_blocked(x, y - 1, field, i);
+    let e = isnt_elf_or_blocked(x, y + 1, field, i);
+    let s = isnt_elf_or_blocked(x + 1, y, field, i);
+    let sw = isnt_elf_or_blocked(x + 1, y - 1, field, i);
+    let se = isnt_elf_or_blocked(x + 1, y + 1, field, i);
     if n && nw && ne && w && e && s && sw && se {
         return None;
     }
     for a in 0..4 {
         let rule_rot = (a + i) % 4;
-        match rule_rot {
-            0 => {
-                // If there is no Elf in the N, NE, or NW adjacent positions, the Elf proposes moving north one step.
-                if n && ne && nw {
-                    return Some((x - 1, y));
-                }
-            }
-            1 => {
-                // If there is no Elf in the S, SE, or SW adjacent positions, the Elf proposes moving south one step.
-                if s && se && sw {
-                    return Some((x + 1, y));
-                }
-            }
-            2 => {
-                // If there is no Elf in the W, NW, or SW adjacent positions, the Elf proposes moving west one step.
-                if w && nw && sw {
-                    return Some((x, y - 1));
-                }
-            }
-            _ => {
-                // 3 case
-                // If there is no Elf in the E, NE, or SE adjacent positions, the Elf proposes moving east one step.
-                if e && ne && se {
-                    return Some((x, y + 1));
-                }
-            }
+        if rule_rot == 0 && n && ne && nw {
+            return Some((x - 1, y));
+        }
+        if rule_rot == 1 && s && se && sw {
+            return Some((x + 1, y));
+        }
+        if rule_rot == 2 && w && nw && sw {
+            return Some((x, y - 1));
+        }
+        if rule_rot == 3 && e && ne && se {
+            return Some((x, y + 1));
         }
     }
     None
 }
 
-fn isnt_elf(x: usize, y: usize, field: &Field, i: usize) -> bool {
+fn isnt_elf_or_blocked(x: usize, y: usize, field: &Field, i: usize) -> bool {
     if field[x][y] == T::Empty {
         true
     } else if let T::Blocked(a) = field[x][y] {
-        return a != i;
+        a != i
     } else {
         false
     }
+}
+
+fn is_elf(t: &T) -> bool {
+    matches!(t, T::Elf(_, _))
 }
 
 fn count_empty(field: &Field) -> i32 {
@@ -147,17 +138,10 @@ fn count_empty(field: &Field) -> i32 {
     count
 }
 
-fn is_elf(t: &T) -> bool {
-    match t {
-        T::Elf(_, _) => true,
-        _ => false,
-    }
-}
-
 fn parse(input: &str) -> Field {
     let dim_x = input.lines().count();
     let dim_y = input.lines().next().unwrap().len();
-    let margin_fact = 1;
+    let margin_fact = 1; // how much larger the field needs to be.
     let mut output =
         vec![vec![T::Empty; dim_y * (2 * margin_fact + 1)]; dim_x * (2 * margin_fact + 1)];
     input.lines().enumerate().for_each(|(x, l)| {
@@ -171,25 +155,15 @@ fn parse(input: &str) -> Field {
     output
 }
 
-type Field = Vec<Vec<T>>;
-type Clock = usize;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum T {
-    Empty,
-    Elf(usize, usize),
-    Blocked(Clock),
-}
-
-impl ToString for T {
-    fn to_string(&self) -> String {
-        match self {
-            T::Elf(_, _) => String::from("#"),
-            T::Blocked(_) => String::from("b"),
-            _ => String::from("."),
-        }
-    }
-}
+// impl ToString for T {
+//     fn to_string(&self) -> String {
+//         match self {
+//             T::Elf(_, _) => String::from("#"),
+//             T::Blocked(_) => String::from("b"),
+//             _ => String::from("."),
+//         }
+//     }
+// }
 
 #[allow(dead_code)]
 const INPUT_TEST: &str = "\
