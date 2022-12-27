@@ -20,10 +20,7 @@ impl<T> Columnizable<T> for Vec<Vec<T>> {
 }
 
 pub fn main() {
-    let array = vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]];
-    for column in array.by_col() {
-        println!("{:?}", column)
-    }
+    dbg!((-1 as i32).rem_euclid(10));
 }
 
 #[allow(dead_code)]
