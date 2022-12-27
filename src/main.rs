@@ -19,6 +19,7 @@ mod day21;
 mod day22;
 mod day23;
 mod day24;
+mod day25;
 mod day3;
 mod day3bis;
 mod day4;
@@ -101,6 +102,7 @@ fn execute(pb: String) {
         "232" => day23::pb2(),
         "241" => day24::pb1(),
         "242" => day24::pb2(),
+        "251" => day25::pb1(),
         "playground" => playground::main(),
         _ => panic!("unknown problem"),
     };

@@ -120,8 +120,8 @@ fn parse(input: &str) -> World {
     World { x, y, w }
 }
 
+#[allow(dead_code)]
 fn display(world: &World, round: isize, pos: (usize, usize)) {
-    //print!("\x1B[2J\x1B[1;1H");
     println!("");
     println!("Display world at min {round}");
     (0..world.x).for_each(|x| {
