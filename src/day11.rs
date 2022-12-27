@@ -8,9 +8,7 @@ pub fn pb1() {
 
 pub fn pb2() {
     let (monkeys, items) = parse_cmd();
-    // as m(i) are coprimes,
-    // x % m(i) == (x % ∏ m(k)) % m(i)
-    // chinese remainder
+    // x % A == (x % kA) % A
     // solutions solving a system of coprime congruences m(i)
     // have a solution, modulo ∏ m(k).
     let prod_all: i64 = monkeys.iter().map(|m| m.div).product();

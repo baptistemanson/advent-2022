@@ -1,6 +1,5 @@
 use itertools::Itertools;
 use std::collections::{HashSet, VecDeque};
-// off by 1, ot resolve later!
 
 pub fn pb1() {
     let world = parse(&INPUT);

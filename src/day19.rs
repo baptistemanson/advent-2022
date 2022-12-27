@@ -55,13 +55,11 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
     let mut scanned: HashSet<State> = HashSet::with_capacity(50 * 1024 * 1024);
     let mut to_scan = Vec::with_capacity(50 * 1024 * 1024);
     to_scan.push(start_state);
-
     // we use the current best state in terms of geodes
     // to discover if the evaluated state that will always be worse than the current best
     // if it is, we stop there.
     let mut best_geode = 0;
     let mut best_state = State::default();
-
     // as we can only build one robot a turn,
     // there is no point in producing more than what we can spend
     let max_ore = *[
@@ -148,7 +146,6 @@ fn get_best(blueprint: &Blueprint, start_state: State) -> i32 {
 fn dont_need_more(time_left: i32, stock: i32, robots: i32, max: i32) -> bool {
     robots >= max || time_left * robots + stock > time_left * max
 }
-
 // worse if it has the same or less robots for the same or less stock
 // or if even if building one geode robot per turn til the end, it cannot catch up
 fn worse(max: State, other: State) -> bool {

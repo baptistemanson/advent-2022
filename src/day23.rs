@@ -1,4 +1,3 @@
-//use crate::debug::display;
 type Field = Vec<Vec<T>>;
 type Clock = usize;
 // to go faster, I could use a hashset of positions.

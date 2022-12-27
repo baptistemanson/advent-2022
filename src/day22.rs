@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use std::ops::{Add, Sub};
 // This is static to the dataset provided.
-// Solving it generally seems very annoying.
 pub fn pb1() {
     let mut cave = parse(CAVE);
     let e1 = edge(0, 51, 0, 100);
@@ -164,12 +163,7 @@ fn clk(f: Facing) -> Facing {
 }
 
 fn counterclk(f: Facing) -> Facing {
-    match f {
-        Facing::L => Facing::D,
-        Facing::R => Facing::U,
-        Facing::U => Facing::L,
-        Facing::D => Facing::R,
-    }
+    clk(opposed(f))
 }
 
 fn step(f: Facing) -> Pos {
